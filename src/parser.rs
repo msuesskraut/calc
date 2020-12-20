@@ -1,8 +1,11 @@
 use crate::ast::*;
 
 use lazy_static::lazy_static;
-use pest::{Parser, iterators::{Pair, Pairs}};
 use pest::prec_climber::{Assoc, Operator, PrecClimber};
+use pest::{
+    iterators::{Pair, Pairs},
+    Parser,
+};
 use pest_derive::Parser;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -19,13 +22,13 @@ pub struct EquationParser;
 
 lazy_static! {
     static ref PREC_CLIMBER: PrecClimber<Rule> = {
-        use Rule::*;
         use Assoc::*;
+        use Rule::*;
 
         PrecClimber::new(vec![
             Operator::new(add, Left) | Operator::new(subtract, Left),
             Operator::new(multiply, Left) | Operator::new(divide, Left) | Operator::new(rem, Left),
-            Operator::new(power, Right)
+            Operator::new(power, Right),
         ])
     };
 }
@@ -41,16 +44,20 @@ fn new_operand_term(lhs: Operand, op: Operation, rhs: Operand) -> Operand {
     Operand::Term(Box::new(Term { op, lhs, rhs }))
 }
 
-fn parse_term(lhs: Result<Operand, ParserError>, op: Pair<Rule>, rhs: Result<Operand, ParserError>) -> Result<Operand, ParserError> {
+fn parse_term(
+    lhs: Result<Operand, ParserError>,
+    op: Pair<Rule>,
+    rhs: Result<Operand, ParserError>,
+) -> Result<Operand, ParserError> {
     let lhs = lhs?;
     let rhs = rhs?;
     match op.as_rule() {
-        Rule::add      => Ok(new_operand_term(lhs, Operation::Add, rhs)),
+        Rule::add => Ok(new_operand_term(lhs, Operation::Add, rhs)),
         Rule::subtract => Ok(new_operand_term(lhs, Operation::Sub, rhs)),
         Rule::multiply => Ok(new_operand_term(lhs, Operation::Mul, rhs)),
-        Rule::divide   => Ok(new_operand_term(lhs, Operation::Div, rhs)),
-        Rule::rem      => Ok(new_operand_term(lhs, Operation::Rem, rhs)),
-        Rule::power    => Ok(new_operand_term(lhs, Operation::Pow, rhs)),
+        Rule::divide => Ok(new_operand_term(lhs, Operation::Div, rhs)),
+        Rule::rem => Ok(new_operand_term(lhs, Operation::Rem, rhs)),
+        Rule::power => Ok(new_operand_term(lhs, Operation::Pow, rhs)),
         _ => Err(ParserError::InvalidOperation(op.as_str().to_string())),
     }
 }
@@ -64,13 +71,15 @@ fn parse_operand(expression: Pairs<Rule>) -> Result<Operand, ParserError> {
             Rule::symbol => Ok(Operand::Symbol(pair.as_str().to_string())),
             _ => Err(ParserError::InvalidOperand(pair.as_str().to_string())),
         },
-        parse_term
+        parse_term,
     )
 }
 
 pub fn parse_equation(eq: &str) -> Result<Equation, ParserError> {
     match EquationParser::parse(Rule::equation, eq) {
-        Ok(rules) => Ok(Equation { eq: parse_operand(rules)? }),
+        Ok(rules) => Ok(Equation {
+            eq: parse_operand(rules)?,
+        }),
         Err(e) => Err(ParserError::InvalidEquation(e.to_string())),
     }
 }
@@ -131,7 +140,7 @@ mod tests {
                 let lhs = Operand::Number(2.0);
                 let rhs = Operand::Symbol("exp".to_string());
                 let op = Operation::Pow;
-                Operand::Term(Box::new(Term { op, lhs, rhs }))  
+                Operand::Term(Box::new(Term { op, lhs, rhs }))
             };
             let rhs = Operand::Symbol("val".to_string());
             let op = Operation::Mul;
