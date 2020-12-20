@@ -15,6 +15,7 @@ fn calc_term(term: Term, env: &Env) -> Result<Number, CalcError> {
         Mul => lhs * rhs,
         Div => lhs / rhs,
         Rem => lhs % rhs,
+        Pow => lhs.powf(rhs),
     })
 }
 
@@ -92,5 +93,13 @@ mod tests {
         let rhs = Operand::Number(4.0);
         let op = Operation::Rem;
         assert_eq!(Ok(2.0), calc_term(Term { op, lhs, rhs }, &Env::new()));
+    }
+
+    #[test]
+    fn calc_term_pow() {
+        let lhs = Operand::Number(3.0);
+        let rhs = Operand::Number(4.0);
+        let op = Operation::Pow;
+        assert_eq!(Ok(81.0), calc_term(Term { op, lhs, rhs }, &Env::new()));
     }
 }
