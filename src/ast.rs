@@ -2,15 +2,13 @@ use std::collections::HashMap;
 
 pub type Number = f64;
 
-pub enum Operand
-{
+pub enum Operand {
     Number(Number),
     Symbol(String),
-    Term(Box<Term>)
+    Term(Box<Term>),
 }
 
-pub enum Operation
-{
+pub enum Operation {
     Add,
     Sub,
     Mul,
@@ -18,8 +16,7 @@ pub enum Operation
     Rem,
 }
 
-pub struct Term
-{
+pub struct Term {
     pub op: Operation,
     pub lhs: Operand,
     pub rhs: Operand,
@@ -31,7 +28,9 @@ pub struct Env {
 
 impl Env {
     pub fn new() -> Self {
-        Self { env: HashMap::new() }
+        Self {
+            env: HashMap::new(),
+        }
     }
 
     pub fn get(&self, sym: &String) -> Option<&Number> {
@@ -49,7 +48,7 @@ mod tests {
 
     #[test]
     fn read_env_empty() {
-        let mut env = Env::new();
+        let env = Env::new();
 
         assert_eq!(None, env.get(&"x".to_string()));
     }
