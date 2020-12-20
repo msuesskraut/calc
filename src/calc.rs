@@ -41,7 +41,10 @@ mod tests {
 
     #[test]
     fn calc_sym_unknown() {
-        assert_eq!(Err(CalcError::UnknownSymbol("x".to_string())), calc(Operand::Symbol("x".to_string()), &Env::new()));
+        assert_eq!(
+            Err(CalcError::UnknownSymbol("x".to_string())),
+            calc(Operand::Symbol("x".to_string()), &Env::new())
+        );
     }
 
     #[test]
@@ -55,8 +58,8 @@ mod tests {
     fn calc_term_add() {
         let lhs = Operand::Number(3.0);
         let rhs = Operand::Number(4.0);
-        let op= Operation::Add;
-        assert_eq!(Ok(7.0), calc_term(Term { op, lhs, rhs}, &Env::new()));
+        let op = Operation::Add;
+        assert_eq!(Ok(7.0), calc_term(Term { op, lhs, rhs }, &Env::new()));
     }
 
     #[test]
