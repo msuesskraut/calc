@@ -33,7 +33,7 @@ impl Env {
         }
     }
 
-    pub fn get(&self, sym: &String) -> Option<&Number> {
+    pub fn get(&self, sym: &str) -> Option<&Number> {
         self.env.get(sym)
     }
 
@@ -50,7 +50,7 @@ mod tests {
     fn read_env_empty() {
         let env = Env::new();
 
-        assert_eq!(None, env.get(&"x".to_string()));
+        assert_eq!(None, env.get("x"));
     }
 
     #[test]
@@ -58,6 +58,6 @@ mod tests {
         let mut env = Env::new();
         env.put("x".to_string(), 12.0);
 
-        assert_eq!(Some(&12.0), env.get(&"x".to_string()));
+        assert_eq!(Some(&12.0), env.get("x"));
     }
 }
