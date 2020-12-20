@@ -14,6 +14,7 @@ pub enum Operation {
     Mul,
     Div,
     Rem,
+    Pow,
 }
 
 pub struct Term {
