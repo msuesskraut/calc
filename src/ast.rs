@@ -2,12 +2,14 @@ use std::collections::HashMap;
 
 pub type Number = f64;
 
+#[derive(Debug, PartialEq)]
 pub enum Operand {
     Number(Number),
     Symbol(String),
     Term(Box<Term>),
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum Operation {
     Add,
     Sub,
@@ -17,12 +19,14 @@ pub enum Operation {
     Pow,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Term {
     pub op: Operation,
     pub lhs: Operand,
     pub rhs: Operand,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Equation {
     pub eq: Operand,
 }
