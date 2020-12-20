@@ -31,6 +31,7 @@ pub struct Equation {
     pub eq: Operand,
 }
 
+#[derive(Debug, Default)]
 pub struct Env {
     env: HashMap<String, Number>,
 }

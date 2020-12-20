@@ -1,7 +1,7 @@
 use crate::ast::*;
 
 #[derive(Debug, PartialEq, Eq)]
-enum CalcError {
+pub enum CalcError {
     UnknownSymbol(String),
 }
 
@@ -31,7 +31,7 @@ fn calc_operand(op: Operand, env: &Env) -> Result<Number, CalcError> {
     }
 }
 
-fn calc_equation(eq: Equation, env: &Env) -> Result<Number, CalcError> {
+pub fn calc_equation(eq: Equation, env: &Env) -> Result<Number, CalcError> {
     calc_operand(eq.eq, env)
 }
 
