@@ -4,9 +4,9 @@ mod parser;
 
 use parser::parse_equation;
 
-pub use crate::ast::{ Env, Number };
-pub use crate::parser::ParserError;
+pub use crate::ast::{Env, Number};
 pub use crate::calc::CalcError;
+pub use crate::parser::ParserError;
 
 use crate::calc::calc_equation;
 

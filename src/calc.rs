@@ -56,7 +56,10 @@ mod tests {
     fn calc_sym_known() {
         let mut env = Env::new();
         env.put("x".to_string(), 12.0);
-        assert_eq!(Ok(12.0), calc_operand(Operand::Symbol("x".to_string()), &env));
+        assert_eq!(
+            Ok(12.0),
+            calc_operand(Operand::Symbol("x".to_string()), &env)
+        );
     }
 
     #[test]
@@ -109,7 +112,9 @@ mod tests {
 
     #[test]
     fn calc_equation_simple() {
-        let eq = Equation { eq: Operand::Number(3.0) };
+        let eq = Equation {
+            eq: Operand::Number(3.0),
+        };
         assert_eq!(Ok(3.0), calc_equation(eq, &Env::new()));
     }
 }
