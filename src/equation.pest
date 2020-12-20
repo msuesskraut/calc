@@ -1,0 +1,19 @@
+int = { ("+" | "-")? ~ ASCII_DIGIT+ }
+num = @{ int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
+
+symbol = @{ ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
+
+operation = _{ add | subtract | multiply | divide | rem | power }
+    add      = { "+" }
+    subtract = { "-" }
+    multiply = { "*" }
+    divide   = { "/" }
+    rem      = { "%" }
+    power    = { "^" }
+
+expr = { term ~ (operation ~ term)* }
+term = _{ num | symbol | "(" ~ expr ~ ")" }
+
+equation = _{ SOI ~ expr ~ EOI }
+
+WHITESPACE = _{ " " | "\t" }
