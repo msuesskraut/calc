@@ -7,8 +7,8 @@ enum CalcError {
 
 fn calc_term(term: Term, env: &Env) -> Result<Number, CalcError> {
     use self::Operation::*;
-    let lhs = calc(term.lhs, env)?;
-    let rhs = calc(term.rhs, env)?;
+    let lhs = calc_operand(term.lhs, env)?;
+    let rhs = calc_operand(term.rhs, env)?;
     Ok(match term.op {
         Add => lhs + rhs,
         Sub => lhs - rhs,
@@ -19,7 +19,7 @@ fn calc_term(term: Term, env: &Env) -> Result<Number, CalcError> {
     })
 }
 
-fn calc(op: Operand, env: &Env) -> Result<Number, CalcError> {
+fn calc_operand(op: Operand, env: &Env) -> Result<Number, CalcError> {
     use self::Operand::*;
     match op {
         Number(num) => Ok(num),
@@ -31,20 +31,24 @@ fn calc(op: Operand, env: &Env) -> Result<Number, CalcError> {
     }
 }
 
+fn calc_equation(eq: Equation, env: &Env) -> Result<Number, CalcError> {
+    calc_operand(eq.eq, env)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn calc_number_atom() {
-        assert_eq!(Ok(12.0), calc(Operand::Number(12.0), &Env::new()));
+        assert_eq!(Ok(12.0), calc_operand(Operand::Number(12.0), &Env::new()));
     }
 
     #[test]
     fn calc_sym_unknown() {
         assert_eq!(
             Err(CalcError::UnknownSymbol("x".to_string())),
-            calc(Operand::Symbol("x".to_string()), &Env::new())
+            calc_operand(Operand::Symbol("x".to_string()), &Env::new())
         );
     }
 
@@ -52,7 +56,7 @@ mod tests {
     fn calc_sym_known() {
         let mut env = Env::new();
         env.put("x".to_string(), 12.0);
-        assert_eq!(Ok(12.0), calc(Operand::Symbol("x".to_string()), &env));
+        assert_eq!(Ok(12.0), calc_operand(Operand::Symbol("x".to_string()), &env));
     }
 
     #[test]
@@ -101,5 +105,11 @@ mod tests {
         let rhs = Operand::Number(4.0);
         let op = Operation::Pow;
         assert_eq!(Ok(81.0), calc_term(Term { op, lhs, rhs }, &Env::new()));
+    }
+
+    #[test]
+    fn calc_equation_simple() {
+        let eq = Equation { eq: Operand::Number(3.0) };
+        assert_eq!(Ok(3.0), calc_equation(eq, &Env::new()));
     }
 }

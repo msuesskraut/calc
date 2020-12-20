@@ -23,6 +23,10 @@ pub struct Term {
     pub rhs: Operand,
 }
 
+pub struct Equation {
+    pub eq: Operand,
+}
+
 pub struct Env {
     env: HashMap<String, Number>,
 }
