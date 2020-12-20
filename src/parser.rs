@@ -81,13 +81,64 @@ mod tests {
 
     #[test]
     fn parse_number() {
-        let eq = Operand::Number(12.0);
-        assert_eq!(Ok(Equation { eq }), parse_equation("12.0"));
+        let eq = Operand::Number(12.2);
+        assert_eq!(Ok(Equation { eq }), parse_equation("12.2"));
     }
 
     #[test]
     fn parse_symbol() {
         let eq = Operand::Symbol("x".to_string());
         assert_eq!(Ok(Equation { eq }), parse_equation("x"));
+    }
+
+    #[test]
+    fn parse_term_add() {
+        let lhs = Operand::Number(3.0);
+        let rhs = Operand::Number(-4.0);
+        let op = Operation::Mul;
+        let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
+        assert_eq!(Ok(Equation { eq }), parse_equation("3 * -4"));
+    }
+
+    #[test]
+    fn parse_term_mul() {
+        let lhs = Operand::Number(1.0);
+        let rhs = Operand::Number(2.0);
+        let op = Operation::Add;
+        let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
+        assert_eq!(Ok(Equation { eq }), parse_equation("1 + 2"));
+    }
+
+    #[test]
+    fn parse_term_precedence_add_mul() {
+        let lhs = Operand::Number(1.0);
+        let rhs = {
+            let lhs = Operand::Number(2.0);
+            let rhs = Operand::Symbol("val".to_string());
+            let op = Operation::Mul;
+            Operand::Term(Box::new(Term { op, lhs, rhs }))
+        };
+        let op = Operation::Add;
+        let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
+        assert_eq!(Ok(Equation { eq }), parse_equation("1 + 2 * val"));
+    }
+
+    #[test]
+    fn parse_term_precedence_sub_div_pow() {
+        let lhs = Operand::Number(1.0);
+        let rhs = {
+            let lhs = {
+                let lhs = Operand::Number(2.0);
+                let rhs = Operand::Symbol("exp".to_string());
+                let op = Operation::Pow;
+                Operand::Term(Box::new(Term { op, lhs, rhs }))  
+            };
+            let rhs = Operand::Symbol("val".to_string());
+            let op = Operation::Mul;
+            Operand::Term(Box::new(Term { op, lhs, rhs }))
+        };
+        let op = Operation::Add;
+        let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
+        assert_eq!(Ok(Equation { eq }), parse_equation("1 + 2 ^ exp * val"));
     }
 }
