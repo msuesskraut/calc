@@ -31,7 +31,7 @@ fn calc_operand(op: Operand, env: &Env) -> Result<Number, CalcError> {
     }
 }
 
-pub fn calc_equation(eq: Equation, env: &Env) -> Result<Number, CalcError> {
+pub fn calc_equation(eq: Expression, env: &Env) -> Result<Number, CalcError> {
     calc_operand(eq.eq, env)
 }
 
@@ -115,7 +115,7 @@ mod tests {
 
     #[test]
     fn calc_equation_simple() {
-        let eq = Equation {
+        let eq = Expression {
             eq: Operand::Number(3.0),
         };
         assert_eq!(Ok(3.0), calc_equation(eq, &Env::default()));

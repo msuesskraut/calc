@@ -27,19 +27,19 @@ pub struct Term {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Equation {
+pub struct Expression {
     pub eq: Operand,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Assignment {
     pub sym: String,
-    pub eq: Equation,
+    pub eq: Expression,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum Statement {
-    Equation(Equation),
+    Expression(Expression),
     Assignment(Assignment),
 }
 

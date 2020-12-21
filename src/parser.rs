@@ -102,7 +102,7 @@ fn parse_assignment(assignment: Pairs<Rule>) -> Result<Assignment, ParserError> 
             ))?
             .into_inner(),
     )?;
-    let eq = Equation { eq };
+    let eq = Expression { eq };
     Ok(Assignment { sym, eq })
 }
 
@@ -115,7 +115,7 @@ fn parse_statement(statements: Pairs<Rule>) -> Result<Statement, ParserError> {
             }
             Rule::equation => {
                 let eq = parse_operand(statement.into_inner())?;
-                Ok(Statement::Equation(Equation { eq }))
+                Ok(Statement::Expression(Expression { eq }))
             }
             r => Err(ParserError::InvalidStatement(format!(
                 "Unexpected rule: {:?}",
@@ -141,13 +141,13 @@ mod tests {
     #[test]
     fn parse_number() {
         let eq = Operand::Number(12.2);
-        assert_eq!(Ok(Statement::Equation(Equation { eq })), parse("12.2"));
+        assert_eq!(Ok(Statement::Expression(Expression { eq })), parse("12.2"));
     }
 
     #[test]
     fn parse_symbol() {
         let eq = Operand::Symbol("x".to_string());
-        assert_eq!(Ok(Statement::Equation(Equation { eq })), parse("x"));
+        assert_eq!(Ok(Statement::Expression(Expression { eq })), parse("x"));
     }
 
     #[test]
@@ -159,7 +159,7 @@ mod tests {
             Term { op, lhs, rhs }
         };
         let eq = Operand::Term(Box::new(term));
-        assert_eq!(Ok(Statement::Equation(Equation { eq })), parse("x + 1"));
+        assert_eq!(Ok(Statement::Expression(Expression { eq })), parse("x + 1"));
     }
 
     #[test]
@@ -168,7 +168,7 @@ mod tests {
         let rhs = Operand::Number(-4.0);
         let op = Operation::Mul;
         let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
-        assert_eq!(Ok(Statement::Equation(Equation { eq })), parse("3 * -4"));
+        assert_eq!(Ok(Statement::Expression(Expression { eq })), parse("3 * -4"));
     }
 
     #[test]
@@ -177,7 +177,7 @@ mod tests {
         let rhs = Operand::Number(2.0);
         let op = Operation::Add;
         let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
-        assert_eq!(Ok(Statement::Equation(Equation { eq })), parse("1 + 2"));
+        assert_eq!(Ok(Statement::Expression(Expression { eq })), parse("1 + 2"));
     }
 
     #[test]
@@ -192,7 +192,7 @@ mod tests {
         let op = Operation::Add;
         let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
         assert_eq!(
-            Ok(Statement::Equation(Equation { eq })),
+            Ok(Statement::Expression(Expression { eq })),
             parse("1 + 2 * val")
         );
     }
@@ -214,7 +214,7 @@ mod tests {
         let op = Operation::Add;
         let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
         assert_eq!(
-            Ok(Statement::Equation(Equation { eq })),
+            Ok(Statement::Expression(Expression { eq })),
             parse("1 + 2 ^ exp * val")
         );
     }
@@ -225,7 +225,7 @@ mod tests {
             let sym = "a".to_string();
             let eq = {
                 let eq = Operand::Number(1.0);
-                Equation { eq }
+                Expression { eq }
             };
             Assignment { sym, eq }
         };

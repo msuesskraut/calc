@@ -41,7 +41,7 @@ impl Calculator {
     pub fn execute(&mut self, line: &str) -> Result<Option<Number>, Error> {
         let st = parse(line)?;
         match st {
-            Statement::Equation(eq) => Ok(Some(calc_equation(eq, &self.env)?)),
+            Statement::Expression(eq) => Ok(Some(calc_equation(eq, &self.env)?)),
             Statement::Assignment(assign) => {
                 self.env
                     .put(assign.sym, calc_equation(assign.eq, &self.env)?);
