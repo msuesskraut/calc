@@ -14,6 +14,10 @@ operation = _{ add | subtract | multiply | divide | rem | power }
 expr = { term ~ (operation ~ term)* }
 term = _{ num | symbol | "(" ~ expr ~ ")" }
 
-equation = _{ SOI ~ expr ~ EOI }
+equation = { expr }
+
+assignment = { symbol ~ ":=" ~ equation }
+
+statement = _{ SOI ~ ( assignment | equation ) ~ EOI }
 
 WHITESPACE = _{ " " | "\t" }
