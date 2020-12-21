@@ -31,6 +31,18 @@ pub struct Equation {
     pub eq: Operand,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Assignment {
+    pub sym: String,
+    pub eq: Equation,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Statement {
+    Equation(Equation),
+    Assignment(Assignment),
+}
+
 #[derive(Debug, Default)]
 pub struct Env {
     env: HashMap<String, Number>,
