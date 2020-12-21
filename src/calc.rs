@@ -41,7 +41,10 @@ mod tests {
 
     #[test]
     fn calc_number_atom() {
-        assert_eq!(Ok(12.0), calc_operand(Operand::Number(12.0), &Env::default()));
+        assert_eq!(
+            Ok(12.0),
+            calc_operand(Operand::Number(12.0), &Env::default())
+        );
     }
 
     #[test]

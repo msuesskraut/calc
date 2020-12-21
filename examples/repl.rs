@@ -1,6 +1,6 @@
 use rust_expression::Calculator;
 
-use linefeed::{ Interface, ReadResult };
+use linefeed::{Interface, ReadResult};
 
 use std::io;
 use std::sync::Arc;
@@ -19,7 +19,10 @@ fn main() -> io::Result<()> {
 
     if let Err(e) = interface.load_history(HISTORY_FILE) {
         if e.kind() == io::ErrorKind::NotFound {
-            println!("History file {} doesn't exist, not loading history.", HISTORY_FILE);
+            println!(
+                "History file {} doesn't exist, not loading history.",
+                HISTORY_FILE
+            );
         } else {
             eprintln!("Could not load history file {}: {}", HISTORY_FILE, e);
         }
@@ -31,7 +34,7 @@ fn main() -> io::Result<()> {
         if !line.trim().is_empty() {
             interface.add_history_unique(line.clone());
         }
-        
+
         if "quit" == line {
             break;
         }

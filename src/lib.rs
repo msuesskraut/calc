@@ -43,9 +43,10 @@ impl Calculator {
         match st {
             Statement::Equation(eq) => Ok(Some(calc_equation(eq, &self.env)?)),
             Statement::Assignment(assign) => {
-                self.env.put(assign.sym, calc_equation(assign.eq, &self.env)?);
+                self.env
+                    .put(assign.sym, calc_equation(assign.eq, &self.env)?);
                 Ok(None)
-            },
+            }
         }
     }
 }
@@ -58,12 +59,12 @@ mod tests {
     fn simple_calc() {
         let mut calc = Calculator::new();
         assert_eq!(Ok(Some(3.0)), calc.execute("1 + 2"));
-    }    
+    }
 
     #[test]
     fn simple_assign() {
         let mut calc = Calculator::new();
         assert_eq!(Ok(None), calc.execute("a := 1"));
         assert_eq!(Ok(Some(1.0)), calc.execute("a"));
-    }    
+    }
 }
