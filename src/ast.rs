@@ -49,12 +49,6 @@ pub struct Env {
 }
 
 impl Env {
-    pub fn new() -> Self {
-        Self {
-            env: HashMap::new(),
-        }
-    }
-
     pub fn get(&self, sym: &str) -> Option<&Number> {
         self.env.get(sym)
     }
@@ -70,14 +64,14 @@ mod tests {
 
     #[test]
     fn read_env_empty() {
-        let env = Env::new();
+        let env = Env::default();
 
         assert_eq!(None, env.get("x"));
     }
 
     #[test]
     fn read_env_var() {
-        let mut env = Env::new();
+        let mut env = Env::default();
         env.put("x".to_string(), 12.0);
 
         assert_eq!(Some(&12.0), env.get("x"));
