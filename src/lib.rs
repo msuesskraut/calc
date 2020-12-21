@@ -2,11 +2,11 @@ mod ast;
 mod calc;
 mod parser;
 
-use parser::parse_equation;
+use parser::parse;
 
-pub use crate::ast::{Env, Number};
-pub use crate::calc::CalcError;
-pub use crate::parser::ParserError;
+use crate::ast::{Env, Number, Statement};
+use crate::calc::CalcError;
+use crate::parser::ParserError;
 
 use crate::calc::calc_equation;
 
@@ -38,21 +38,15 @@ impl Calculator {
         Self::default()
     }
 
-    pub fn assign(&mut self, sym: &str, eq: &str) -> Result<(), Error> {
-        let ast = parse_equation(eq)?;
-        let res = calc_equation(ast, &self.env)?;
-        self.env.put(sym.to_string(), res);
-        Ok(())
-    }
-
-    pub fn read(&self, sym: &str) -> Option<&Number> {
-        self.env.get(sym)
-    }
-
-    pub fn calc(&self, eq: &str) -> Result<Number, Error> {
-        let eq = parse_equation(eq)?;
-        let res = calc_equation(eq, &self.env)?;
-        Ok(res)
+    pub fn execute(&mut self, line: &str) -> Result<Option<Number>, Error> {
+        let st = parse(line)?;
+        match st {
+            Statement::Equation(eq) => Ok(Some(calc_equation(eq, &self.env)?)),
+            Statement::Assignment(assign) => {
+                self.env.put(assign.sym, calc_equation(assign.eq, &self.env)?);
+                Ok(None)
+            },
+        }
     }
 }
 
@@ -61,15 +55,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn calculator_assign() {
-        let mut c = Calculator::new();
-        c.assign("x", "3").unwrap();
-        assert_eq!(Some(&3.0), c.read("x"));
-    }
+    fn simple_calc() {
+        let mut calc = Calculator::new();
+        assert_eq!(Ok(Some(3.0)), calc.execute("1 + 2"));
+    }    
 
     #[test]
-    fn calculator_calc() {
-        let c = Calculator::new();
-        assert_eq!(3.0, c.calc("1 + 2").unwrap());
-    }
+    fn simple_assign() {
+        let mut calc = Calculator::new();
+        assert_eq!(Ok(None), calc.execute("a := 1"));
+        assert_eq!(Ok(Some(1.0)), calc.execute("a"));
+    }    
 }
