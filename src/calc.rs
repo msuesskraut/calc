@@ -22,10 +22,10 @@ impl Env {
     }
 }
 
-fn calc_term(term: Term, env: &Env) -> Result<Number, CalcError> {
+pub fn calc_term(term: &Term, env: &Env) -> Result<Number, CalcError> {
     use self::Operation::*;
-    let lhs = calc_operand(term.lhs, env)?;
-    let rhs = calc_operand(term.rhs, env)?;
+    let lhs = calc_operand(&term.lhs, env)?;
+    let rhs = calc_operand(&term.rhs, env)?;
     Ok(match term.op {
         Add => lhs + rhs,
         Sub => lhs - rhs,
@@ -36,20 +36,20 @@ fn calc_term(term: Term, env: &Env) -> Result<Number, CalcError> {
     })
 }
 
-fn calc_operand(op: Operand, env: &Env) -> Result<Number, CalcError> {
+fn calc_operand(op: &Operand, env: &Env) -> Result<Number, CalcError> {
     use self::Operand::*;
     match op {
-        Number(num) => Ok(num),
-        Term(term) => calc_term(*term, env),
-        Symbol(sym) => match env.get(&sym) {
+        Number(num) => Ok(*num),
+        Term(term) => calc_term(term, env),
+        Symbol(sym) => match env.get(sym) {
             Some(num) => Ok(*num),
             None => Err(CalcError::UnknownSymbol(sym.clone())),
         },
     }
 }
 
-pub fn calc_expression(eq: Expression, env: &Env) -> Result<Number, CalcError> {
-    calc_operand(eq.eq, env)
+pub fn calc_expression(eq: &Expression, env: &Env) -> Result<Number, CalcError> {
+    calc_operand(&eq.eq, env)
 }
 
 #[cfg(test)]
@@ -75,7 +75,7 @@ mod tests {
     fn calc_number_atom() {
         assert_eq!(
             Ok(12.0),
-            calc_operand(Operand::Number(12.0), &Env::default())
+            calc_operand(&Operand::Number(12.0), &Env::default())
         );
     }
 
@@ -83,7 +83,7 @@ mod tests {
     fn calc_sym_unknown() {
         assert_eq!(
             Err(CalcError::UnknownSymbol("x".to_string())),
-            calc_operand(Operand::Symbol("x".to_string()), &Env::default())
+            calc_operand(&Operand::Symbol("x".to_string()), &Env::default())
         );
     }
 
@@ -93,7 +93,7 @@ mod tests {
         env.put("x".to_string(), 12.0);
         assert_eq!(
             Ok(12.0),
-            calc_operand(Operand::Symbol("x".to_string()), &env)
+            calc_operand(&Operand::Symbol("x".to_string()), &env)
         );
     }
 
@@ -102,7 +102,7 @@ mod tests {
         let lhs = Operand::Number(3.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Add;
-        assert_eq!(Ok(7.0), calc_term(Term { op, lhs, rhs }, &Env::default()));
+        assert_eq!(Ok(7.0), calc_term(&Term { op, lhs, rhs }, &Env::default()));
     }
 
     #[test]
@@ -110,7 +110,7 @@ mod tests {
         let lhs = Operand::Number(3.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Sub;
-        assert_eq!(Ok(-1.0), calc_term(Term { op, lhs, rhs }, &Env::default()));
+        assert_eq!(Ok(-1.0), calc_term(&Term { op, lhs, rhs }, &Env::default()));
     }
 
     #[test]
@@ -118,7 +118,7 @@ mod tests {
         let lhs = Operand::Number(3.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Mul;
-        assert_eq!(Ok(12.0), calc_term(Term { op, lhs, rhs }, &Env::default()));
+        assert_eq!(Ok(12.0), calc_term(&Term { op, lhs, rhs }, &Env::default()));
     }
 
     #[test]
@@ -126,7 +126,7 @@ mod tests {
         let lhs = Operand::Number(12.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Div;
-        assert_eq!(Ok(3.0), calc_term(Term { op, lhs, rhs }, &Env::default()));
+        assert_eq!(Ok(3.0), calc_term(&Term { op, lhs, rhs }, &Env::default()));
     }
 
     #[test]
@@ -134,7 +134,7 @@ mod tests {
         let lhs = Operand::Number(14.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Rem;
-        assert_eq!(Ok(2.0), calc_term(Term { op, lhs, rhs }, &Env::default()));
+        assert_eq!(Ok(2.0), calc_term(&Term { op, lhs, rhs }, &Env::default()));
     }
 
     #[test]
@@ -142,7 +142,7 @@ mod tests {
         let lhs = Operand::Number(3.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Pow;
-        assert_eq!(Ok(81.0), calc_term(Term { op, lhs, rhs }, &Env::default()));
+        assert_eq!(Ok(81.0), calc_term(&Term { op, lhs, rhs }, &Env::default()));
     }
 
     #[test]
@@ -150,6 +150,6 @@ mod tests {
         let eq = Expression {
             eq: Operand::Number(3.0),
         };
-        assert_eq!(Ok(3.0), calc_expression(eq, &Env::default()));
+        assert_eq!(Ok(3.0), calc_expression(&eq, &Env::default()));
     }
 }
