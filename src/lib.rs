@@ -1,14 +1,13 @@
 mod ast;
 mod calc;
 mod parser;
+mod solver;
 
 use parser::parse;
 
-use crate::ast::{Env, Number, Statement};
-use crate::calc::CalcError;
+use crate::ast::{Number, Statement};
+use crate::calc::{Env, CalcError, calc_expression};
 use crate::parser::ParserError;
-
-use crate::calc::calc_equation;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
@@ -41,10 +40,10 @@ impl Calculator {
     pub fn execute(&mut self, line: &str) -> Result<Option<Number>, Error> {
         let st = parse(line)?;
         match st {
-            Statement::Expression(eq) => Ok(Some(calc_equation(eq, &self.env)?)),
+            Statement::Expression(eq) => Ok(Some(calc_expression(eq, &self.env)?)),
             Statement::Assignment(assign) => {
                 self.env
-                    .put(assign.sym, calc_equation(assign.eq, &self.env)?);
+                    .put(assign.sym, calc_expression(assign.eq, &self.env)?);
                 Ok(None)
             }
         }

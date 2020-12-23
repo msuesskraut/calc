@@ -1,15 +1,13 @@
-use std::collections::HashMap;
-
 pub type Number = f64;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Operand {
     Number(Number),
     Symbol(String),
     Term(Box<Term>),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Operation {
     Add,
     Sub,
@@ -19,61 +17,26 @@ pub enum Operation {
     Pow,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Term {
     pub op: Operation,
     pub lhs: Operand,
     pub rhs: Operand,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Expression {
     pub eq: Operand,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Assignment {
     pub sym: String,
     pub eq: Expression,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Expression(Expression),
     Assignment(Assignment),
-}
-
-#[derive(Debug, Default)]
-pub struct Env {
-    env: HashMap<String, Number>,
-}
-
-impl Env {
-    pub fn get(&self, sym: &str) -> Option<&Number> {
-        self.env.get(sym)
-    }
-
-    pub fn put(&mut self, sym: String, num: Number) {
-        self.env.insert(sym, num);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn read_env_empty() {
-        let env = Env::default();
-
-        assert_eq!(None, env.get("x"));
-    }
-
-    #[test]
-    fn read_env_var() {
-        let mut env = Env::default();
-        env.put("x".to_string(), 12.0);
-
-        assert_eq!(Some(&12.0), env.get("x"));
-    }
 }

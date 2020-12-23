@@ -1,8 +1,25 @@
+use std::collections::HashMap;
+
 use crate::ast::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CalcError {
     UnknownSymbol(String),
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct Env {
+    env: HashMap<String, Number>,
+}
+
+impl Env {
+    pub fn get(&self, sym: &str) -> Option<&Number> {
+        self.env.get(sym)
+    }
+
+    pub fn put(&mut self, sym: String, num: Number) {
+        self.env.insert(sym, num);
+    }
 }
 
 fn calc_term(term: Term, env: &Env) -> Result<Number, CalcError> {
@@ -31,13 +48,28 @@ fn calc_operand(op: Operand, env: &Env) -> Result<Number, CalcError> {
     }
 }
 
-pub fn calc_equation(eq: Expression, env: &Env) -> Result<Number, CalcError> {
+pub fn calc_expression(eq: Expression, env: &Env) -> Result<Number, CalcError> {
     calc_operand(eq.eq, env)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn read_env_empty() {
+        let env = Env::default();
+
+        assert_eq!(None, env.get("x"));
+    }
+
+    #[test]
+    fn read_env_var() {
+        let mut env = Env::default();
+        env.put("x".to_string(), 12.0);
+
+        assert_eq!(Some(&12.0), env.get("x"));
+    }
 
     #[test]
     fn calc_number_atom() {
@@ -118,6 +150,6 @@ mod tests {
         let eq = Expression {
             eq: Operand::Number(3.0),
         };
-        assert_eq!(Ok(3.0), calc_equation(eq, &Env::default()));
+        assert_eq!(Ok(3.0), calc_expression(eq, &Env::default()));
     }
 }
