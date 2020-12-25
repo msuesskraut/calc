@@ -13,13 +13,13 @@ pub enum ParserError {
     InvalidNumber(String),
     InvalidOperation(String),
     InvalidOperand(String),
-    InvalidEquation(String),
+    InvalidExpression(String),
     InvalidSymbol(String),
     InvalidStatement(String),
     EmptyStatement,
     MissingAssignmentTarget(String),
     MissingAssignment(String),
-    MissingAssignmentEquation(String),
+    MissingAssignmentExpression(String),
 }
 
 #[derive(Parser)]
@@ -97,7 +97,7 @@ fn parse_assignment(assignment: Pairs<Rule>) -> Result<Assignment, ParserError> 
 
     let eq = parse_operand(
         it.next()
-            .ok_or(ParserError::MissingAssignmentEquation(
+            .ok_or(ParserError::MissingAssignmentExpression(
                 it.as_str().to_string(),
             ))?
             .into_inner(),
@@ -130,7 +130,7 @@ fn parse_statement(statements: Pairs<Rule>) -> Result<Statement, ParserError> {
 pub fn parse(cmd: &str) -> Result<Statement, ParserError> {
     match EquationParser::parse(Rule::statement, cmd) {
         Ok(rules) => parse_statement(rules),
-        Err(e) => Err(ParserError::InvalidEquation(e.to_string())),
+        Err(e) => Err(ParserError::InvalidExpression(e.to_string())),
     }
 }
 
