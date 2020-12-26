@@ -3,16 +3,16 @@ mod calc;
 mod parser;
 mod solver;
 
-use parser::parse;
-
 use crate::ast::{Number, Statement};
-use crate::calc::{Env, CalcError, calc_expression};
-use crate::parser::ParserError;
+use crate::calc::{Env, CalcError, calc_operand};
+use crate::parser::{parse, ParserError};
+use crate::solver::{solve_for, SolverError};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     ParserError(ParserError),
     CalcError(CalcError),
+    SolverError(SolverError)
 }
 
 impl From<ParserError> for Error {
@@ -24,6 +24,12 @@ impl From<ParserError> for Error {
 impl From<CalcError> for Error {
     fn from(err: CalcError) -> Self {
         Error::CalcError(err)
+    }
+}
+
+impl From<SolverError> for Error {
+    fn from(err: SolverError) -> Self {
+        Error::SolverError(err)
     }
 }
 
@@ -40,11 +46,13 @@ impl Calculator {
     pub fn execute(&mut self, line: &str) -> Result<Option<Number>, Error> {
         let st = parse(line)?;
         match st {
-            Statement::Expression(eq) => Ok(Some(calc_expression(&eq, &self.env)?)),
-            Statement::Assignment(assign) => {
-                self.env
-                    .put(assign.sym, calc_expression(&assign.eq, &self.env)?);
+            Statement::Expression { op } => Ok(Some(calc_operand(&op, &self.env)?)),
+            Statement::Assignment { sym, op } => {
+                self.env.put(sym, calc_operand(&op, &self.env)?);
                 Ok(None)
+            },
+            Statement::SolveFor { lhs, rhs, sym } => {
+                Ok(Some(solve_for(&lhs, &rhs, &sym)?))
             }
         }
     }

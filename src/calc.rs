@@ -36,7 +36,7 @@ pub fn calc_term(term: &Term, env: &Env) -> Result<Number, CalcError> {
     })
 }
 
-fn calc_operand(op: &Operand, env: &Env) -> Result<Number, CalcError> {
+pub fn calc_operand(op: &Operand, env: &Env) -> Result<Number, CalcError> {
     use self::Operand::*;
     match op {
         Number(num) => Ok(*num),
@@ -46,10 +46,6 @@ fn calc_operand(op: &Operand, env: &Env) -> Result<Number, CalcError> {
             None => Err(CalcError::UnknownSymbol(sym.clone())),
         },
     }
-}
-
-pub fn calc_expression(eq: &Expression, env: &Env) -> Result<Number, CalcError> {
-    calc_operand(&eq.eq, env)
 }
 
 #[cfg(test)]
@@ -147,9 +143,7 @@ mod tests {
 
     #[test]
     fn calc_equation_simple() {
-        let eq = Expression {
-            eq: Operand::Number(3.0),
-        };
-        assert_eq!(Ok(3.0), calc_expression(&eq, &Env::default()));
+        let op = Operand::Number(3.0);
+        assert_eq!(Ok(3.0), calc_operand(&op, &Env::default()));
     }
 }

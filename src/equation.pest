@@ -1,7 +1,9 @@
 int = { ("+" | "-")? ~ ASCII_DIGIT+ }
 num = @{ int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ int)? }
 
-symbol = @{ ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
+ident = _{ ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
+
+symbol = @{ ident }
 
 operation = _{ add | subtract | multiply | divide | rem | power }
     add      = { "+" }
@@ -14,10 +16,10 @@ operation = _{ add | subtract | multiply | divide | rem | power }
 expr = { term ~ (operation ~ term)* }
 term = _{ num | symbol | "(" ~ expr ~ ")" }
 
-equation = { expr }
+assignment = { symbol ~ ":=" ~ expr }
 
-assignment = { symbol ~ ":=" ~ equation }
+solvefor = { "solve" ~ expr ~ "=" ~ expr ~ "for" ~ symbol }
 
-statement = _{ SOI ~ ( assignment | equation ) ~ EOI }
+statement = _{ SOI ~ ( solvefor | assignment | expr ) ~ EOI }
 
 WHITESPACE = _{ " " | "\t" }

@@ -20,6 +20,9 @@ pub enum ParserError {
     MissingAssignmentTarget(String),
     MissingAssignment(String),
     MissingAssignmentExpression(String),
+    MissingSolveForLeftExpression(String),
+    MissingSolveForRightExpression(String),
+    MissingSolveForSymbol(String),
 }
 
 #[derive(Parser)]
@@ -81,7 +84,7 @@ fn parse_operand(expression: Pairs<Rule>) -> Result<Operand, ParserError> {
     )
 }
 
-fn parse_assignment(assignment: Pairs<Rule>) -> Result<Assignment, ParserError> {
+fn parse_assignment(assignment: Pairs<Rule>) -> Result<Statement, ParserError> {
     let mut it = assignment;
 
     let sym = it.next().ok_or(ParserError::MissingAssignmentTarget(
@@ -95,28 +98,57 @@ fn parse_assignment(assignment: Pairs<Rule>) -> Result<Assignment, ParserError> 
     }?;
     let sym = sym.to_string();
 
-    let eq = parse_operand(
+    let op = parse_operand(
         it.next()
             .ok_or(ParserError::MissingAssignmentExpression(
                 it.as_str().to_string(),
             ))?
             .into_inner(),
     )?;
-    let eq = Expression { eq };
-    Ok(Assignment { sym, eq })
+    Ok(Statement::Assignment { sym, op })
 }
 
+fn parse_solve_for(solve_for: Pairs<Rule>) -> Result<Statement, ParserError> {
+    let mut it = solve_for;
+
+    let lhs = parse_operand(
+        it.next()
+            .ok_or(ParserError::MissingSolveForLeftExpression(
+                it.as_str().to_string(),
+            ))?
+            .into_inner(),
+    )?;
+    let rhs = parse_operand(
+        it.next()
+            .ok_or(ParserError::MissingSolveForRightExpression(
+                it.as_str().to_string(),
+            ))?
+            .into_inner(),
+    )?;
+    let sym = it.next().ok_or(ParserError::MissingSolveForSymbol(
+        it.as_str().to_string(),
+    ))?;
+    let sym = if Rule::symbol == sym.as_rule() {
+        Ok(sym.as_str())
+    } else {
+        Err(ParserError::InvalidSymbol(sym.as_str().to_string()))
+    }?;
+    let sym = sym.to_string();
+
+    Ok(Statement::SolveFor { lhs, rhs, sym })
+}
 fn parse_statement(statements: Pairs<Rule>) -> Result<Statement, ParserError> {
     for statement in statements {
         return match statement.as_rule() {
             Rule::assignment => {
-                let assign = parse_assignment(statement.into_inner())?;
-                Ok(Statement::Assignment(assign))
-            }
-            Rule::equation => {
-                let eq = parse_operand(statement.into_inner())?;
-                Ok(Statement::Expression(Expression { eq }))
-            }
+                parse_assignment(statement.into_inner())
+            },
+            Rule::expr => {
+                Ok(Statement::Expression { op: parse_operand(Pairs::single(statement))? })
+            },
+            Rule::solvefor => {
+                parse_solve_for(statement.into_inner())
+            },
             r => Err(ParserError::InvalidStatement(format!(
                 "Unexpected rule: {:?}",
                 r
@@ -140,14 +172,14 @@ mod tests {
 
     #[test]
     fn parse_number() {
-        let eq = Operand::Number(12.2);
-        assert_eq!(Ok(Statement::Expression(Expression { eq })), parse("12.2"));
+        let op = Operand::Number(12.2);
+        assert_eq!(Ok(Statement::Expression { op }), parse("12.2"));
     }
 
     #[test]
     fn parse_symbol() {
-        let eq = Operand::Symbol("x".to_string());
-        assert_eq!(Ok(Statement::Expression(Expression { eq })), parse("x"));
+        let op = Operand::Symbol("x".to_string());
+        assert_eq!(Ok(Statement::Expression { op }), parse("x"));
     }
 
     #[test]
@@ -158,8 +190,8 @@ mod tests {
             let op = Operation::Add;
             Term { op, lhs, rhs }
         };
-        let eq = Operand::Term(Box::new(term));
-        assert_eq!(Ok(Statement::Expression(Expression { eq })), parse("x + 1"));
+        let op = Operand::Term(Box::new(term));
+        assert_eq!(Ok(Statement::Expression { op }), parse("x + 1"));
     }
 
     #[test]
@@ -167,8 +199,8 @@ mod tests {
         let lhs = Operand::Number(3.0);
         let rhs = Operand::Number(-4.0);
         let op = Operation::Mul;
-        let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
-        assert_eq!(Ok(Statement::Expression(Expression { eq })), parse("3 * -4"));
+        let op = Operand::Term(Box::new(Term { op, lhs, rhs }));
+        assert_eq!(Ok(Statement::Expression { op }), parse("3 * -4"));
     }
 
     #[test]
@@ -176,8 +208,8 @@ mod tests {
         let lhs = Operand::Number(1.0);
         let rhs = Operand::Number(2.0);
         let op = Operation::Add;
-        let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
-        assert_eq!(Ok(Statement::Expression(Expression { eq })), parse("1 + 2"));
+        let op = Operand::Term(Box::new(Term { op, lhs, rhs }));
+        assert_eq!(Ok(Statement::Expression { op }), parse("1 + 2"));
     }
 
     #[test]
@@ -190,9 +222,9 @@ mod tests {
             Operand::Term(Box::new(Term { op, lhs, rhs }))
         };
         let op = Operation::Add;
-        let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
+        let op = Operand::Term(Box::new(Term { op, lhs, rhs }));
         assert_eq!(
-            Ok(Statement::Expression(Expression { eq })),
+            Ok(Statement::Expression { op }),
             parse("1 + 2 * val")
         );
     }
@@ -212,24 +244,29 @@ mod tests {
             Operand::Term(Box::new(Term { op, lhs, rhs }))
         };
         let op = Operation::Add;
-        let eq = Operand::Term(Box::new(Term { op, lhs, rhs }));
+        let op = Operand::Term(Box::new(Term { op, lhs, rhs }));
         assert_eq!(
-            Ok(Statement::Expression(Expression { eq })),
+            Ok(Statement::Expression { op }),
             parse("1 + 2 ^ exp * val")
         );
     }
 
     #[test]
     fn parse_a_is_1() {
-        let assign = {
-            let sym = "a".to_string();
-            let eq = {
-                let eq = Operand::Number(1.0);
-                Expression { eq }
-            };
-            Assignment { sym, eq }
+        let statement = Statement::Assignment {
+            sym: "a".to_string(),
+            op: Operand::Number(1.0),
         };
-        let statement = Statement::Assignment(assign);
         assert_eq!(Ok(statement), parse("a := 1"));
+    }
+
+    #[test]
+    fn parse_solve_for() {
+        let statement = Statement::SolveFor {
+            lhs : Operand::Number(13.0),
+            rhs : Operand::Symbol("x".to_string()),
+            sym : "x".to_string(),
+        };
+        assert_eq!(Ok(statement), parse("solve 13 = x for x"));
     }
 }

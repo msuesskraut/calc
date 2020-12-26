@@ -48,20 +48,19 @@ pub struct Term {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Expression {
-    pub eq: Operand,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Assignment {
-    pub sym: String,
-    pub eq: Expression,
-}
-
-#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
-    Expression(Expression),
-    Assignment(Assignment),
+    Expression {
+        op: Operand,
+    },
+    Assignment {
+        sym: String,
+        op: Operand,
+    },
+    SolveFor {
+        lhs: Operand,
+        rhs: Operand,
+        sym: String,
+    }
 }
 
 #[cfg(test)]
