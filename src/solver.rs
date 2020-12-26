@@ -25,12 +25,18 @@ fn normalize_term(term: &Term, sym: &str) -> Result<NormForm, SolverError> {
         Operation::Add => Ok({
             let factor = lhs.a1 + rhs.a1;
             let summand = lhs.a0 + rhs.a0;
-            NormForm { a1: factor, a0: summand}
+            NormForm {
+                a1: factor,
+                a0: summand,
+            }
         }),
         Operation::Sub => Ok({
             let factor = lhs.a1 - rhs.a1;
             let summand = lhs.a0 - rhs.a0;
-            NormForm { a1: factor, a0: summand}
+            NormForm {
+                a1: factor,
+                a0: summand,
+            }
         }),
         Operation::Mul => {
             let a2 = lhs.a1 * rhs.a1;
@@ -39,30 +45,36 @@ fn normalize_term(term: &Term, sym: &str) -> Result<NormForm, SolverError> {
             if a2 != 0.0 {
                 Err(SolverError::UnsupportedXSquare)
             } else {
-                Ok(NormForm { a1, a0})
+                Ok(NormForm { a1, a0 })
             }
-        },
+        }
         Operation::Div => {
             if rhs.a1 != 0.0 {
                 Err(SolverError::UnsupportedXDenominator)
             } else {
-            let a1 = lhs.a1 / rhs.a0;
-            let a0 = lhs.a0 / rhs.a0; 
-                Ok(NormForm { a1, a0})
+                let a1 = lhs.a1 / rhs.a0;
+                let a0 = lhs.a0 / rhs.a0;
+                Ok(NormForm { a1, a0 })
             }
-        },
+        }
         Operation::Rem => {
             if (lhs.a1 != 0.0) || (rhs.a1 != 0.0) {
                 Err(SolverError::UnsupportedRemainder)
             } else {
-                Ok(NormForm { a1: 0.0, a0: (lhs.a0 % rhs.a0) })
+                Ok(NormForm {
+                    a1: 0.0,
+                    a0: (lhs.a0 % rhs.a0),
+                })
             }
-        },
+        }
         Operation::Pow => {
             if (lhs.a1 != 0.0) || (rhs.a1 != 0.0) {
                 Err(SolverError::UnsupportedPower)
             } else {
-                Ok(NormForm { a1: 0.0, a0: (lhs.a0.powf(rhs.a0)) })
+                Ok(NormForm {
+                    a1: 0.0,
+                    a0: (lhs.a0.powf(rhs.a0)),
+                })
             }
         }
     }
@@ -71,12 +83,14 @@ fn normalize_term(term: &Term, sym: &str) -> Result<NormForm, SolverError> {
 fn normalize(op: &Operand, sym: &str) -> Result<NormForm, SolverError> {
     match op {
         Operand::Number(num) => Ok(NormForm { a1: 0.0, a0: *num }),
-        Operand::Symbol(s) => if op.is_symbol(sym) {
-            Ok(NormForm { a1: 1.0, a0: 0.0 })
-        } else {
-            Err(SolverError::UnknownSymbol(s.clone()))
-        },
-        Operand::Term(term) => normalize_term(&*term, sym)
+        Operand::Symbol(s) => {
+            if op.is_symbol(sym) {
+                Ok(NormForm { a1: 1.0, a0: 0.0 })
+            } else {
+                Err(SolverError::UnknownSymbol(s.clone()))
+            }
+        }
+        Operand::Term(term) => normalize_term(&*term, sym),
     }
 }
 
@@ -95,7 +109,7 @@ pub fn solve_for(lhs: &Operand, rhs: &Operand, sym: &str) -> Result<Number, Solv
 #[cfg(test)]
 mod tests {
     mod helpers {
-        use crate::ast::{ Statement, Operand };
+        use crate::ast::{Operand, Statement};
         use crate::parser::parse;
 
         pub fn parse_expression(s: &str) -> Operand {
@@ -124,20 +138,20 @@ mod tests {
             parse_expression("1 @");
         }
     }
-    use super::*;
     use self::helpers::parse_expression;
+    use super::*;
     use crate::parse;
 
     #[test]
     fn normalize_operand_number() {
         let exp = NormForm { a1: 0f64, a0: 1.2 };
-        assert_eq!(exp, normalize(&parse_expression("1.2"), "x").unwrap());   
+        assert_eq!(exp, normalize(&parse_expression("1.2"), "x").unwrap());
     }
 
     #[test]
     fn normalize_operand_symbol_x() {
         let exp = NormForm { a1: 1f64, a0: 0f64 };
-        assert_eq!(exp, normalize(&parse_expression("x"), "x").unwrap());   
+        assert_eq!(exp, normalize(&parse_expression("x"), "x").unwrap());
     }
 
     #[test]
@@ -154,59 +168,82 @@ mod tests {
 
     #[test]
     fn normalize_operand_simple_sub() {
-        let exp = NormForm { a1: 1f64, a0: -12f64 };
+        let exp = NormForm {
+            a1: 1f64,
+            a0: -12f64,
+        };
         assert_eq!(exp, normalize(&parse_expression("x - 12"), "x").unwrap());
     }
 
     #[test]
     fn normalize_operand_simple_mul() {
         let exp = NormForm { a1: 2f64, a0: 0f64 };
-        assert_eq!(exp, normalize(&parse_expression("x * 2"), "x").unwrap());   
+        assert_eq!(exp, normalize(&parse_expression("x * 2"), "x").unwrap());
     }
 
     #[test]
     fn normalize_operand_simple_rem() {
         let exp = NormForm { a1: 0f64, a0: 1f64 };
-        assert_eq!(exp, normalize(&parse_expression("7 % 3"), "x").unwrap());   
+        assert_eq!(exp, normalize(&parse_expression("7 % 3"), "x").unwrap());
     }
 
     #[test]
     fn normalize_operand_simple_pow() {
-        let exp = NormForm { a1: 0f64, a0: 27f64 };
-        assert_eq!(exp, normalize(&parse_expression("3 ^ 3"), "x").unwrap());   
+        let exp = NormForm {
+            a1: 0f64,
+            a0: 27f64,
+        };
+        assert_eq!(exp, normalize(&parse_expression("3 ^ 3"), "x").unwrap());
     }
 
     #[test]
     fn normalize_operand_simple_norm_form() {
         let exp = NormForm { a1: 3f64, a0: 2f64 };
-        assert_eq!(exp, normalize(&parse_expression("3 * x + 2"), "x").unwrap());   
+        assert_eq!(exp, normalize(&parse_expression("3 * x + 2"), "x").unwrap());
     }
 
     #[test]
     fn normalize_operand_simple_norm_sub() {
-        let exp = NormForm { a1: 3f64, a0: -2f64 };
-        assert_eq!(exp, normalize(&parse_expression("3 * x - 2"), "x").unwrap());   
+        let exp = NormForm {
+            a1: 3f64,
+            a0: -2f64,
+        };
+        assert_eq!(exp, normalize(&parse_expression("3 * x - 2"), "x").unwrap());
     }
 
     #[test]
     fn normalize_operand_div() {
-        let exp = NormForm { a1: 4f64, a0: -5f64 };
-        assert_eq!(exp, normalize(&parse_expression("(12 * x - 15) / 3"), "x").unwrap());   
+        let exp = NormForm {
+            a1: 4f64,
+            a0: -5f64,
+        };
+        assert_eq!(
+            exp,
+            normalize(&parse_expression("(12 * x - 15) / 3"), "x").unwrap()
+        );
     }
 
     #[test]
     fn solve_for_simple() {
-        assert!(if let Statement::SolveFor { lhs, rhs, sym } = parse("solve x = 10 for x").unwrap() {
-            assert_eq!(Ok(10.0), solve_for(&lhs, &rhs, &sym));
-            true
-        } else { false });
+        assert!(
+            if let Statement::SolveFor { lhs, rhs, sym } = parse("solve x = 10 for x").unwrap() {
+                assert_eq!(Ok(10.0), solve_for(&lhs, &rhs, &sym));
+                true
+            } else {
+                false
+            }
+        );
     }
 
     #[test]
     fn solve_for_complex() {
-        assert!(if let Statement::SolveFor { lhs, rhs, sym } = parse("solve 5 + 2 * x + 12 = 22 - 6 * x + 7 for x").unwrap() {
+        assert!(if let Statement::SolveFor { lhs, rhs, sym } =
+            parse("solve 5 + 2 * x + 12 = 22 - 6 * x + 7 for x").unwrap()
+        {
             assert_eq!(Ok(1.5), solve_for(&lhs, &rhs, &sym));
             true
-        } else { false });
+        } else {
+            false
+        });
     }
 }

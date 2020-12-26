@@ -46,7 +46,7 @@ pub enum Statement {
         lhs: Operand,
         rhs: Operand,
         sym: String,
-    }
+    },
 }
 
 #[cfg(test)]

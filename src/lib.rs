@@ -4,7 +4,7 @@ mod parser;
 mod solver;
 
 use crate::ast::{Number, Statement};
-use crate::calc::{Env, CalcError, calc_operand};
+use crate::calc::{calc_operand, CalcError, Env};
 use crate::parser::{parse, ParserError};
 use crate::solver::{solve_for, SolverError};
 
@@ -12,7 +12,7 @@ use crate::solver::{solve_for, SolverError};
 pub enum Error {
     ParserError(ParserError),
     CalcError(CalcError),
-    SolverError(SolverError)
+    SolverError(SolverError),
 }
 
 impl From<ParserError> for Error {
@@ -50,10 +50,8 @@ impl Calculator {
             Statement::Assignment { sym, op } => {
                 self.env.put(sym, calc_operand(&op, &self.env)?);
                 Ok(None)
-            },
-            Statement::SolveFor { lhs, rhs, sym } => {
-                Ok(Some(solve_for(&lhs, &rhs, &sym)?))
             }
+            Statement::SolveFor { lhs, rhs, sym } => Ok(Some(solve_for(&lhs, &rhs, &sym)?)),
         }
     }
 }

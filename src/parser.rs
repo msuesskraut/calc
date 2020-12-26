@@ -125,9 +125,9 @@ fn parse_solve_for(solve_for: Pairs<Rule>) -> Result<Statement, ParserError> {
             ))?
             .into_inner(),
     )?;
-    let sym = it.next().ok_or(ParserError::MissingSolveForSymbol(
-        it.as_str().to_string(),
-    ))?;
+    let sym = it
+        .next()
+        .ok_or(ParserError::MissingSolveForSymbol(it.as_str().to_string()))?;
     let sym = if Rule::symbol == sym.as_rule() {
         Ok(sym.as_str())
     } else {
@@ -140,15 +140,11 @@ fn parse_solve_for(solve_for: Pairs<Rule>) -> Result<Statement, ParserError> {
 fn parse_statement(statements: Pairs<Rule>) -> Result<Statement, ParserError> {
     for statement in statements {
         return match statement.as_rule() {
-            Rule::assignment => {
-                parse_assignment(statement.into_inner())
-            },
-            Rule::expr => {
-                Ok(Statement::Expression { op: parse_operand(Pairs::single(statement))? })
-            },
-            Rule::solvefor => {
-                parse_solve_for(statement.into_inner())
-            },
+            Rule::assignment => parse_assignment(statement.into_inner()),
+            Rule::expr => Ok(Statement::Expression {
+                op: parse_operand(Pairs::single(statement))?,
+            }),
+            Rule::solvefor => parse_solve_for(statement.into_inner()),
             r => Err(ParserError::InvalidStatement(format!(
                 "Unexpected rule: {:?}",
                 r
@@ -223,10 +219,7 @@ mod tests {
         };
         let op = Operation::Add;
         let op = Operand::Term(Box::new(Term { op, lhs, rhs }));
-        assert_eq!(
-            Ok(Statement::Expression { op }),
-            parse("1 + 2 * val")
-        );
+        assert_eq!(Ok(Statement::Expression { op }), parse("1 + 2 * val"));
     }
 
     #[test]
@@ -245,10 +238,7 @@ mod tests {
         };
         let op = Operation::Add;
         let op = Operand::Term(Box::new(Term { op, lhs, rhs }));
-        assert_eq!(
-            Ok(Statement::Expression { op }),
-            parse("1 + 2 ^ exp * val")
-        );
+        assert_eq!(Ok(Statement::Expression { op }), parse("1 + 2 ^ exp * val"));
     }
 
     #[test]
@@ -263,9 +253,9 @@ mod tests {
     #[test]
     fn parse_solve_for() {
         let statement = Statement::SolveFor {
-            lhs : Operand::Number(13.0),
-            rhs : Operand::Symbol("x".to_string()),
-            sym : "x".to_string(),
+            lhs: Operand::Number(13.0),
+            rhs: Operand::Symbol("x".to_string()),
+            sym: "x".to_string(),
         };
         assert_eq!(Ok(statement), parse("solve 13 = x for x"));
     }
