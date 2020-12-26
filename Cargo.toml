@@ -9,7 +9,7 @@ description = "Calculator and solver for linear equations."
 repository = "https://github.com/msuesskraut/calc"
 readme = "Readme.md"
 keywords = ["calc", "math", "solver"]
-categories = ["Mathematics"]
+categories = ["mathematics"]
 
 [dependencies]
 
