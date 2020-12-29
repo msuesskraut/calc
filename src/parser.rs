@@ -21,7 +21,9 @@ pub enum ParserError {
     InvalidExpression(String),
     #[error("Invalid symbol - expected  `{0}`")]
     InvalidSymbol(String),
-    #[error("Invalid statement - expected assignment, expression, or solve statement, but got `{0}`")]
+    #[error(
+        "Invalid statement - expected assignment, expression, or solve statement, but got `{0}`"
+    )]
     InvalidStatement(String),
     #[error("Expected statement, but got an empty line")]
     EmptyStatement,
@@ -101,9 +103,9 @@ fn parse_operand(expression: Pairs<Rule>) -> Result<Operand, ParserError> {
 fn parse_assignment(assignment: Pairs<Rule>) -> Result<Statement, ParserError> {
     let mut it = assignment;
 
-    let sym = it.next().ok_or_else(|| ParserError::MissingAssignmentTarget(
-        it.as_str().to_string())
-    )?;
+    let sym = it
+        .next()
+        .ok_or_else(|| ParserError::MissingAssignmentTarget(it.as_str().to_string()))?;
 
     let sym = if Rule::symbol == sym.as_rule() {
         Ok(sym.as_str())
@@ -114,9 +116,7 @@ fn parse_assignment(assignment: Pairs<Rule>) -> Result<Statement, ParserError> {
 
     let op = parse_operand(
         it.next()
-            .ok_or_else(|| ParserError::MissingAssignmentExpression(
-                it.as_str().to_string(),
-            ))?
+            .ok_or_else(|| ParserError::MissingAssignmentExpression(it.as_str().to_string()))?
             .into_inner(),
     )?;
     Ok(Statement::Assignment { sym, op })
@@ -127,16 +127,12 @@ fn parse_solve_for(solve_for: Pairs<Rule>) -> Result<Statement, ParserError> {
 
     let lhs = parse_operand(
         it.next()
-            .ok_or_else(|| ParserError::MissingSolveForLeftExpression(
-                it.as_str().to_string(),
-            ))?
+            .ok_or_else(|| ParserError::MissingSolveForLeftExpression(it.as_str().to_string()))?
             .into_inner(),
     )?;
     let rhs = parse_operand(
         it.next()
-            .ok_or_else(|| ParserError::MissingSolveForRightExpression(
-                it.as_str().to_string(),
-            ))?
+            .ok_or_else(|| ParserError::MissingSolveForRightExpression(it.as_str().to_string()))?
             .into_inner(),
     )?;
     let sym = it
@@ -153,7 +149,7 @@ fn parse_solve_for(solve_for: Pairs<Rule>) -> Result<Statement, ParserError> {
 }
 fn parse_statement(statements: Pairs<Rule>) -> Result<Statement, ParserError> {
     let mut it = statements;
-    let statement = it.next().ok_or( ParserError::EmptyStatement)?;
+    let statement = it.next().ok_or(ParserError::EmptyStatement)?;
     match statement.as_rule() {
         Rule::assignment => parse_assignment(statement.into_inner()),
         Rule::expr => Ok(Statement::Expression {
