@@ -5,8 +5,6 @@ use linefeed::{Interface, ReadResult};
 use std::io;
 use std::sync::Arc;
 
-const HISTORY_FILE: &str = "rust-expression-repl.hst";
-
 fn main() -> io::Result<()> {
     let interface = Arc::new(Interface::new("Calc")?);
 
@@ -16,17 +14,6 @@ fn main() -> io::Result<()> {
 
     //interface.set_completer(Arc::new(DemoCompleter));
     interface.set_prompt("% > ")?;
-
-    if let Err(e) = interface.load_history(HISTORY_FILE) {
-        if e.kind() == io::ErrorKind::NotFound {
-            println!(
-                "History file {} doesn't exist, not loading history.",
-                HISTORY_FILE
-            );
-        } else {
-            eprintln!("Could not load history file {}: {}", HISTORY_FILE, e);
-        }
-    }
 
     let mut calc = Calculator::new();
 
@@ -40,9 +27,9 @@ fn main() -> io::Result<()> {
         }
 
         match calc.execute(&line) {
-            Ok(Some(num)) => println!("{:?}", num),
+            Ok(Some(num)) => println!("{:}", num),
             Ok(None) => (),
-            Err(err) => println!("Error: {:?}", err),
+            Err(err) => println!("Error: {:}", err),
         }
     }
 
