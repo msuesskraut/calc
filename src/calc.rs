@@ -1,9 +1,11 @@
-use std::collections::HashMap;
-
 use crate::ast::*;
 
-#[derive(Debug, PartialEq, Eq)]
+use std::collections::HashMap;
+use thiserror::Error;
+
+#[derive(Debug, PartialEq, Eq, Error)]
 pub enum CalcError {
+    #[error("Unknown symbol `{0}`")]
     UnknownSymbol(String),
 }
 

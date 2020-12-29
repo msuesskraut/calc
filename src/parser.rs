@@ -7,21 +7,35 @@ use pest::{
     Parser,
 };
 use pest_derive::Parser;
+use thiserror::Error;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Error)]
 pub enum ParserError {
+    #[error("Invalid number - expected a floating number `{0}`")]
     InvalidNumber(String),
+    #[error("Invalid operation - expected +, -, *, /, %, or ^ `{0}`")]
     InvalidOperation(String),
+    #[error("Invalid operand - expected variable, number or term, but got `{0}`")]
     InvalidOperand(String),
+    #[error("Invalid expression - expected variable, number or term, but got `{0}`")]
     InvalidExpression(String),
+    #[error("Invalid symbol - expected  `{0}`")]
     InvalidSymbol(String),
+    #[error("Invalid statement - expected assignment, expression, or solve statement, but got `{0}`")]
     InvalidStatement(String),
+    #[error("Expected statement, but got an empty line")]
     EmptyStatement,
+    #[error("Missing assignment target - expected symbol, but got `{0}`")]
     MissingAssignmentTarget(String),
+    #[error("Expected an assignment `:=`, but got `{0}`")]
     MissingAssignment(String),
+    #[error("Expected an expression, but got `{0}`")]
     MissingAssignmentExpression(String),
+    #[error("Expected expression in solve left from the `=`, but got `{0}`")]
     MissingSolveForLeftExpression(String),
+    #[error("Expected expression in solve right from the `=`, but got `{0}`")]
     MissingSolveForRightExpression(String),
+    #[error("Expected variable name after `for`, but got `{0}`")]
     MissingSolveForSymbol(String),
 }
 

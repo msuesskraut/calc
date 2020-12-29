@@ -1,5 +1,7 @@
 use crate::ast::*;
 
+use thiserror::Error;
+
 /// Normalized form of a any operand
 /// `factor * x + summand`#
 #[derive(Debug, PartialEq)]
@@ -8,13 +10,19 @@ struct NormForm {
     a0: Number,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Error)]
 pub enum SolverError {
+    #[error("Unknown symbol `{0}` in `solve ... for ...`")]
     UnknownSymbol(String),
+    #[error("Unsupported `^2` of variable to solve for in `solve ... for ...`")]
     UnsupportedXSquare,
+    #[error("Unsupported variable in denominator in `solve ... for ...`")]
     UnsupportedXDenominator,
+    #[error("Unsupported % with solve for variable in `solve ... for ...`")]
     UnsupportedRemainder,
+    #[error("Unsupported power in `solve ... for ...`")]
     UnsupportedPower,
+    #[error("`solve ... for ...` contains no variable (after simplification)")]
     NoVariable,
 }
 
