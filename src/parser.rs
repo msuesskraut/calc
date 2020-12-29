@@ -99,7 +99,7 @@ fn parse_fun_call(fun_call: Pairs<Rule>) -> Result<Operand, ParserError> {
     let name = it.next().ok_or(ParserError::MissingFunctionName)?.as_str().to_string();
 
     let mut params = Vec::new();
-    while let Some(p) = it.next() {
+    for p in it {
         if p.as_rule() == Rule::expr {
             params.push(parse_operand(p.into_inner())?);
         } else {
@@ -180,7 +180,7 @@ fn parse_function(function: Pairs<Rule>) -> Result<Statement, ParserError> {
     let name = it.next().ok_or(ParserError::MissingFunctionName)?.as_str().to_string();
 
     let mut args = Vec::new();
-    while let Some(p) = it.next() {
+    for p in it {
         if p.as_rule() == Rule::symbol {
             args.push(p.as_str().to_string());
         } else {
@@ -193,7 +193,7 @@ fn parse_function(function: Pairs<Rule>) -> Result<Statement, ParserError> {
                 }
             });
         }
-    };
+    }
 
     Err(ParserError::MissingFunctionBody)
 }

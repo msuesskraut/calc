@@ -75,7 +75,7 @@ pub fn calc_term(term: &Term, env: &dyn Env) -> Result<Number, CalcError> {
 }
 
 pub fn calc_function_call(fun_call: &FunCall, env: &dyn Env) -> Result<Number, CalcError> {
-    let function = env.get_fun(&fun_call.name).ok_or(CalcError::UnknownFunction(fun_call.name.to_string()))?;
+    let function = env.get_fun(&fun_call.name).ok_or_else(|| CalcError::UnknownFunction(fun_call.name.to_string()))?;
     if fun_call.params.len() != function.args.len() {
         return Err(CalcError::UnexpectedNumberOfParameters {
             name: fun_call.name.clone(),
