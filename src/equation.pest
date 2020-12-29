@@ -13,13 +13,17 @@ operation = _{ add | subtract | multiply | divide | rem | power }
     rem      = { "%" }
     power    = { "^" }
 
+fun_call = { symbol ~ "(" ~ ( expr ~ ("," ~ expr)* )? ~ ")" }
+
 expr = { term ~ (operation ~ term)* }
-term = _{ num | symbol | "(" ~ expr ~ ")" }
+term = _{ num | fun_call | symbol | "(" ~ expr ~ ")" }
+
+function = { symbol ~ "(" ~ ( symbol ~ ("," ~ symbol)* )? ~ ")" ~ ":=" ~ expr }
 
 assignment = { symbol ~ ":=" ~ expr }
 
 solvefor = { "solve" ~ expr ~ "=" ~ expr ~ "for" ~ symbol }
 
-statement = _{ SOI ~ ( solvefor | assignment | expr ) ~ EOI }
+statement = _{ SOI ~ ( function | solvefor | assignment | expr ) ~ EOI }
 
 WHITESPACE = _{ " " | "\t" }

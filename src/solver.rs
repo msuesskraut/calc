@@ -1,4 +1,5 @@
 use crate::ast::*;
+use crate::calc::{CalcError, Env, calc_function_call};
 
 use thiserror::Error;
 
@@ -12,8 +13,8 @@ struct NormForm {
 
 #[derive(Debug, PartialEq, Eq, Error)]
 pub enum SolverError {
-    #[error("Unknown symbol `{0}` in `solve ... for ...`")]
-    UnknownSymbol(String),
+    #[error("Unknown variable `{0}` in `solve ... for ...`")]
+    UnknownVariable(String),
     #[error("Unsupported `^2` of variable to solve for in `solve ... for ...`")]
     UnsupportedXSquare,
     #[error("Unsupported variable in denominator in `solve ... for ...`")]
@@ -24,11 +25,13 @@ pub enum SolverError {
     UnsupportedPower,
     #[error("`solve ... for ...` contains no variable (after simplification)")]
     NoVariable,
+    #[error(transparent)]
+    FunctionCallError(#[from] CalcError),
 }
 
-fn normalize_term(term: &Term, sym: &str) -> Result<NormForm, SolverError> {
-    let lhs = normalize(&term.lhs, sym)?;
-    let rhs = normalize(&term.rhs, sym)?;
+fn normalize_term(term: &Term, sym: &str, env: &dyn Env) -> Result<NormForm, SolverError> {
+    let lhs = normalize(&term.lhs, sym, env)?;
+    let rhs = normalize(&term.rhs, sym, env)?;
     match term.op {
         Operation::Add => Ok({
             let factor = lhs.a1 + rhs.a1;
@@ -88,23 +91,28 @@ fn normalize_term(term: &Term, sym: &str) -> Result<NormForm, SolverError> {
     }
 }
 
-fn normalize(op: &Operand, sym: &str) -> Result<NormForm, SolverError> {
+fn normalize(op: &Operand, sym: &str, env: &dyn Env) -> Result<NormForm, SolverError> {
     match op {
         Operand::Number(num) => Ok(NormForm { a1: 0.0, a0: *num }),
         Operand::Symbol(s) => {
             if op.is_symbol(sym) {
                 Ok(NormForm { a1: 1.0, a0: 0.0 })
             } else {
-                Err(SolverError::UnknownSymbol(s.clone()))
+                let num = env.get(s).ok_or_else(|| SolverError::UnknownVariable(s.clone()))?;
+                Ok(NormForm { a1: 0.0, a0: *num })
             }
         }
-        Operand::Term(term) => normalize_term(&*term, sym),
+        Operand::Term(term) => normalize_term(&*term, sym, env),
+        Operand::FunCall(fun_call) => {
+            let num = calc_function_call(fun_call, env)?;
+            Ok(NormForm { a1: 0.0, a0: num })
+        },
     }
 }
 
-pub fn solve_for(lhs: &Operand, rhs: &Operand, sym: &str) -> Result<Number, SolverError> {
-    let norm_form_lhs = normalize(lhs, sym)?;
-    let norm_form_rhs = normalize(rhs, sym)?;
+pub fn solve_for(lhs: &Operand, rhs: &Operand, sym: &str, env: &dyn Env) -> Result<Number, SolverError> {
+    let norm_form_lhs = normalize(lhs, sym, env)?;
+    let norm_form_rhs = normalize(rhs, sym, env)?;
     let denominator = norm_form_lhs.a1 - norm_form_rhs.a1;
     if 0.0 == denominator {
         Err(SolverError::NoVariable)
@@ -149,29 +157,38 @@ mod tests {
     use self::helpers::parse_expression;
     use super::*;
     use crate::parse;
+    use crate::calc::TopLevelEnv;
 
     #[test]
     fn normalize_operand_number() {
         let exp = NormForm { a1: 0f64, a0: 1.2 };
-        assert_eq!(exp, normalize(&parse_expression("1.2"), "x").unwrap());
+        assert_eq!(exp, normalize(&parse_expression("1.2"), "x", &TopLevelEnv::default()).unwrap());
     }
 
     #[test]
     fn normalize_operand_symbol_x() {
         let exp = NormForm { a1: 1f64, a0: 0f64 };
-        assert_eq!(exp, normalize(&parse_expression("x"), "x").unwrap());
+        assert_eq!(exp, normalize(&parse_expression("x"), "x", &TopLevelEnv::default()).unwrap());
+    }
+
+    #[test]
+    fn normalize_operand_symbol_y_unknown() {
+        let act = normalize(&parse_expression("y"), "x", &TopLevelEnv::default());
+        assert!(matches!(act, Err(SolverError::UnknownVariable(s)) if s == "y"));
     }
 
     #[test]
     fn normalize_operand_symbol_y() {
-        let act = normalize(&parse_expression("y"), "x");
-        assert!(matches!(act, Err(SolverError::UnknownSymbol(s)) if s == "y"));
+        let mut env = TopLevelEnv::default();
+        env.put("y".to_string(), 12.0);
+        let act = normalize(&parse_expression("y"), "x", &env);
+        assert_eq!(Ok(NormForm { a1: 0.0, a0: 12.0 }), act);
     }
 
     #[test]
     fn normalize_operand_simple_add() {
         let exp = NormForm { a1: 1f64, a0: 1f64 };
-        assert_eq!(exp, normalize(&parse_expression("x + 1"), "x").unwrap());
+        assert_eq!(exp, normalize(&parse_expression("x + 1"), "x", &TopLevelEnv::default()).unwrap());
     }
 
     #[test]
@@ -180,19 +197,19 @@ mod tests {
             a1: 1f64,
             a0: -12f64,
         };
-        assert_eq!(exp, normalize(&parse_expression("x - 12"), "x").unwrap());
+        assert_eq!(exp, normalize(&parse_expression("x - 12"), "x", &TopLevelEnv::default()).unwrap());
     }
 
     #[test]
     fn normalize_operand_simple_mul() {
         let exp = NormForm { a1: 2f64, a0: 0f64 };
-        assert_eq!(exp, normalize(&parse_expression("x * 2"), "x").unwrap());
+        assert_eq!(exp, normalize(&parse_expression("x * 2"), "x", &TopLevelEnv::default()).unwrap());
     }
 
     #[test]
     fn normalize_operand_simple_rem() {
         let exp = NormForm { a1: 0f64, a0: 1f64 };
-        assert_eq!(exp, normalize(&parse_expression("7 % 3"), "x").unwrap());
+        assert_eq!(exp, normalize(&parse_expression("7 % 3"), "x", &TopLevelEnv::default()).unwrap());
     }
 
     #[test]
@@ -201,13 +218,13 @@ mod tests {
             a1: 0f64,
             a0: 27f64,
         };
-        assert_eq!(exp, normalize(&parse_expression("3 ^ 3"), "x").unwrap());
+        assert_eq!(exp, normalize(&parse_expression("3 ^ 3"), "x", &TopLevelEnv::default()).unwrap());
     }
 
     #[test]
     fn normalize_operand_simple_norm_form() {
         let exp = NormForm { a1: 3f64, a0: 2f64 };
-        assert_eq!(exp, normalize(&parse_expression("3 * x + 2"), "x").unwrap());
+        assert_eq!(exp, normalize(&parse_expression("3 * x + 2"), "x", &TopLevelEnv::default()).unwrap());
     }
 
     #[test]
@@ -216,7 +233,7 @@ mod tests {
             a1: 3f64,
             a0: -2f64,
         };
-        assert_eq!(exp, normalize(&parse_expression("3 * x - 2"), "x").unwrap());
+        assert_eq!(exp, normalize(&parse_expression("3 * x - 2"), "x", &TopLevelEnv::default()).unwrap());
     }
 
     #[test]
@@ -227,7 +244,7 @@ mod tests {
         };
         assert_eq!(
             exp,
-            normalize(&parse_expression("(12 * x - 15) / 3"), "x").unwrap()
+            normalize(&parse_expression("(12 * x - 15) / 3"), "x", &TopLevelEnv::default()).unwrap()
         );
     }
 
@@ -235,7 +252,7 @@ mod tests {
     fn solve_for_simple() {
         assert!(
             if let Statement::SolveFor { lhs, rhs, sym } = parse("solve x = 10 for x").unwrap() {
-                assert_eq!(Ok(10.0), solve_for(&lhs, &rhs, &sym));
+                assert_eq!(Ok(10.0), solve_for(&lhs, &rhs, &sym, &TopLevelEnv::default()));
                 true
             } else {
                 false
@@ -248,7 +265,28 @@ mod tests {
         assert!(if let Statement::SolveFor { lhs, rhs, sym } =
             parse("solve 5 + 2 * x + 12 = 22 - 6 * x + 7 for x").unwrap()
         {
-            assert_eq!(Ok(1.5), solve_for(&lhs, &rhs, &sym));
+            assert_eq!(Ok(1.5), solve_for(&lhs, &rhs, &sym, &TopLevelEnv::default()));
+            true
+        } else {
+            false
+        });
+    }
+
+    #[test]
+    fn solve_for_with_function_call() {
+        let mut env = TopLevelEnv::default();
+        env.put_fun("add".to_string(), Function {
+            args: vec!["x".to_string(), "y".to_string()],
+            body: Operand::Term(Box::new(Term {
+                lhs: Operand::Symbol("x".to_string()),
+                rhs: Operand::Symbol("y".to_string()),
+                op: Operation::Add,
+            }))
+        });
+        assert!(if let Statement::SolveFor { lhs, rhs, sym } =
+            parse("solve 2 * x + add(5, 12) = 22 - 6 * x + 7 for x").unwrap()
+        {
+            assert_eq!(Ok(1.5), solve_for(&lhs, &rhs, &sym, &env));
             true
         } else {
             false

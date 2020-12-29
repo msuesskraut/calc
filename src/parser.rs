@@ -39,6 +39,12 @@ pub enum ParserError {
     MissingSolveForRightExpression(String),
     #[error("Expected variable name after `for`, but got `{0}`")]
     MissingSolveForSymbol(String),
+    #[error("No function name found")]
+    MissingFunctionName,
+    #[error("Expected expression as function body, but got nothing")]
+    MissingFunctionBody,
+    #[error("Expected expression as parameter value, but got `{0}`")]
+    ExpectedParamExpression(String),
 }
 
 #[derive(Parser)]
@@ -87,6 +93,25 @@ fn parse_term(
     }
 }
 
+fn parse_fun_call(fun_call: Pairs<Rule>) -> Result<Operand, ParserError> {
+    let mut it = fun_call;
+
+    let name = it.next().ok_or(ParserError::MissingFunctionName)?.as_str().to_string();
+
+    let mut params = Vec::new();
+    while let Some(p) = it.next() {
+        if p.as_rule() == Rule::expr {
+            params.push(parse_operand(p.into_inner())?);
+        } else {
+            return Err(ParserError::ExpectedParamExpression(p.as_str().to_string()));
+        }
+    }
+    Ok(Operand::FunCall (FunCall {
+        name,
+        params
+    }))
+}
+
 fn parse_operand(expression: Pairs<Rule>) -> Result<Operand, ParserError> {
     PREC_CLIMBER.climb(
         expression,
@@ -94,6 +119,7 @@ fn parse_operand(expression: Pairs<Rule>) -> Result<Operand, ParserError> {
             Rule::num => parse_num(pair),
             Rule::expr => parse_operand(pair.into_inner()),
             Rule::symbol => Ok(Operand::Symbol(pair.as_str().to_string())),
+            Rule::fun_call => parse_fun_call(pair.into_inner()),
             _ => Err(ParserError::InvalidOperand(pair.as_str().to_string())),
         },
         parse_term,
@@ -147,6 +173,31 @@ fn parse_solve_for(solve_for: Pairs<Rule>) -> Result<Statement, ParserError> {
 
     Ok(Statement::SolveFor { lhs, rhs, sym })
 }
+
+fn parse_function(function: Pairs<Rule>) -> Result<Statement, ParserError> {
+    let mut it = function;
+
+    let name = it.next().ok_or(ParserError::MissingFunctionName)?.as_str().to_string();
+
+    let mut args = Vec::new();
+    while let Some(p) = it.next() {
+        if p.as_rule() == Rule::symbol {
+            args.push(p.as_str().to_string());
+        } else {
+            let body = parse_operand(p.into_inner())?;
+            return Ok(Statement::Function {
+                name,
+                fun: Function {
+                    args,
+                    body
+                }
+            });
+        }
+    };
+
+    Err(ParserError::MissingFunctionBody)
+}
+
 fn parse_statement(statements: Pairs<Rule>) -> Result<Statement, ParserError> {
     let mut it = statements;
     let statement = it.next().ok_or(ParserError::EmptyStatement)?;
@@ -156,6 +207,7 @@ fn parse_statement(statements: Pairs<Rule>) -> Result<Statement, ParserError> {
             op: parse_operand(Pairs::single(statement))?,
         }),
         Rule::solvefor => parse_solve_for(statement.into_inner()),
+        Rule::function => parse_function(statement.into_inner()),
         r => Err(ParserError::InvalidStatement(format!(
             "Unexpected rule: {:?}",
             r
@@ -266,5 +318,69 @@ mod tests {
             sym: "x".to_string(),
         };
         assert_eq!(Ok(statement), parse("solve 13 = x for x"));
+    }
+
+    #[test]
+    fn parse_fun_no_args() {
+        let fun = Function {
+            args: Vec::new(),
+            body: Operand::Number(12.0),
+        };
+        let statement = Statement::Function {
+            name: "ghs".to_string(),
+            fun
+        };
+        assert_eq!(Ok(statement), parse("ghs() := 12"));
+    }
+
+    #[test]
+    fn parse_fun_x() {
+        let fun = Function {
+            args: vec!["x".to_string()],
+            body: {
+                let lhs = Operand::Number(1.0);
+                let rhs = Operand::Symbol("x".to_string());
+                let op = Operation::Add;
+                Operand::Term(Box::new(Term { lhs, rhs, op }))
+            }
+        };
+        let statement = Statement::Function {
+            name: "f".to_string(),
+            fun
+        };
+        assert_eq!(Ok(statement), parse("f(x) := 1 + x"));
+    }
+
+    #[test]
+    fn parse_fun_call_without_params() {
+        let fun_call = FunCall {
+            name: "fun".to_string(),
+            params: Vec::new(),
+        };
+        let op = Operand::FunCall(fun_call);
+        let stat = Statement::Expression {op};
+        assert_eq!(Ok(stat), parse("fun()"));
+    }
+
+    #[test]
+    fn parse_fun_call_with_symbol() {
+        let fun_call = FunCall {
+            name: "fun".to_string(),
+            params: vec![Operand::Symbol("x".to_string())],
+        };
+        let op = Operand::FunCall(fun_call);
+        let stat = Statement::Expression {op};
+        assert_eq!(Ok(stat), parse("fun(x)"));
+    }
+
+    #[test]
+    fn parse_fun_call_with_number() {
+        let fun_call = FunCall {
+            name: "fun".to_string(),
+            params: vec![Operand::Number(42.0)],
+        };
+        let op = Operand::FunCall(fun_call);
+        let stat = Statement::Expression {op};
+        assert_eq!(Ok(stat), parse("fun(42)"));
     }
 }

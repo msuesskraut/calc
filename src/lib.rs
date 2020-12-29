@@ -4,7 +4,7 @@ mod parser;
 mod solver;
 
 use crate::ast::{Number, Statement};
-use crate::calc::{calc_operand, CalcError, Env};
+use crate::calc::{calc_operand, CalcError, TopLevelEnv};
 use crate::parser::{parse, ParserError};
 use crate::solver::{solve_for, SolverError};
 
@@ -30,7 +30,7 @@ pub enum Error {
 /// Further examples are in [`Calculator::execute`].
 #[derive(Debug, Default)]
 pub struct Calculator {
-    env: Env,
+    env: TopLevelEnv,
 }
 
 impl Calculator {
@@ -51,14 +51,22 @@ impl Calculator {
     ///   ```
     ///   # use rust_expression::Calculator;
     ///   # let mut c = Calculator::new();
-    ///   assert_eq!(Ok(None), c.execute("a := 10"));
-    ///   assert_eq!(Ok(Some(100.0)), c.execute("a ^ 2"));
+    ///   assert_eq!(Ok(None), c.execute("a := 6"));
+    ///   assert_eq!(Ok(Some(36.0)), c.execute("a ^ 2"));
     ///   ```
     /// - Solving linear expressions:
     ///   ```
     ///   # use rust_expression::Calculator;
     ///   # let mut c = Calculator::new();
-    ///   assert_eq!(Ok(Some(4.0)), c.execute("solve 3 * x - 2 = x + 6 for x"));
+    ///   # c.execute("a := 6");
+    ///   assert_eq!(Ok(Some(4.0)), c.execute("solve 3 * x - 2 = x + a for x"));
+    ///   ```
+    /// - Function definition:
+    ///   ```
+    ///   # use rust_expression::Calculator;
+    ///   # let mut c = Calculator::new();
+    ///   assert_eq!(Ok(None), c.execute("fun(x, y) := y - x"));
+    ///   assert_eq!(Ok(Some(20.0)), c.execute("fun(1 + 2, 3 * 9) - 4"));
     ///   ```
     pub fn execute(&mut self, line: &str) -> Result<Option<Number>, Error> {
         let st = parse(line)?;
@@ -68,7 +76,11 @@ impl Calculator {
                 self.env.put(sym, calc_operand(&op, &self.env)?);
                 Ok(None)
             }
-            Statement::SolveFor { lhs, rhs, sym } => Ok(Some(solve_for(&lhs, &rhs, &sym)?)),
+            Statement::SolveFor { lhs, rhs, sym } => Ok(Some(solve_for(&lhs, &rhs, &sym, &self.env)?)),
+            Statement::Function { name, fun } => {
+                self.env.put_fun(name, fun);
+                Ok(None)
+            }
         }
     }
 }
@@ -88,5 +100,12 @@ mod tests {
         let mut calc = Calculator::new();
         assert_eq!(Ok(None), calc.execute("a := 1"));
         assert_eq!(Ok(Some(1.0)), calc.execute("a"));
+    }
+
+    #[test]
+    fn simple_function() {
+        let mut calc = Calculator::new();
+        assert_eq!(Ok(None), calc.execute("fun(x, y) := y - x"));
+        assert_eq!(Ok(Some(20.0)), calc.execute("fun(1 + 2, 3 * 9) - 4"));
     }
 }

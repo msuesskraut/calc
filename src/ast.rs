@@ -1,10 +1,17 @@
 pub type Number = f64;
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct FunCall {
+    pub name: String,
+    pub params: Vec<Operand>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Operand {
     Number(Number),
     Symbol(String),
     Term(Box<Term>),
+    FunCall(FunCall),
 }
 
 impl Operand {
@@ -31,6 +38,21 @@ pub struct Term {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct Function {
+    pub args : Vec<String>,
+    pub body: Operand,
+}
+
+impl Default for Function {
+    fn default() -> Self {
+        Function {
+            args: Vec::new(),
+            body: Operand::Number(1.0),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Expression {
         op: Operand,
@@ -44,6 +66,10 @@ pub enum Statement {
         rhs: Operand,
         sym: String,
     },
+    Function {
+        name: String,
+        fun: Function,
+    }
 }
 
 #[cfg(test)]
