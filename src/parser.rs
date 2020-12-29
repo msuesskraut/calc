@@ -96,7 +96,11 @@ fn parse_term(
 fn parse_fun_call(fun_call: Pairs<Rule>) -> Result<Operand, ParserError> {
     let mut it = fun_call;
 
-    let name = it.next().ok_or(ParserError::MissingFunctionName)?.as_str().to_string();
+    let name = it
+        .next()
+        .ok_or(ParserError::MissingFunctionName)?
+        .as_str()
+        .to_string();
 
     let mut params = Vec::new();
     for p in it {
@@ -106,10 +110,7 @@ fn parse_fun_call(fun_call: Pairs<Rule>) -> Result<Operand, ParserError> {
             return Err(ParserError::ExpectedParamExpression(p.as_str().to_string()));
         }
     }
-    Ok(Operand::FunCall (FunCall {
-        name,
-        params
-    }))
+    Ok(Operand::FunCall(FunCall { name, params }))
 }
 
 fn parse_operand(expression: Pairs<Rule>) -> Result<Operand, ParserError> {
@@ -177,7 +178,11 @@ fn parse_solve_for(solve_for: Pairs<Rule>) -> Result<Statement, ParserError> {
 fn parse_function(function: Pairs<Rule>) -> Result<Statement, ParserError> {
     let mut it = function;
 
-    let name = it.next().ok_or(ParserError::MissingFunctionName)?.as_str().to_string();
+    let name = it
+        .next()
+        .ok_or(ParserError::MissingFunctionName)?
+        .as_str()
+        .to_string();
 
     let mut args = Vec::new();
     for p in it {
@@ -187,10 +192,7 @@ fn parse_function(function: Pairs<Rule>) -> Result<Statement, ParserError> {
             let body = parse_operand(p.into_inner())?;
             return Ok(Statement::Function {
                 name,
-                fun: Function {
-                    args,
-                    body
-                }
+                fun: Function { args, body },
             });
         }
     }
@@ -328,7 +330,7 @@ mod tests {
         };
         let statement = Statement::Function {
             name: "ghs".to_string(),
-            fun
+            fun,
         };
         assert_eq!(Ok(statement), parse("ghs() := 12"));
     }
@@ -342,11 +344,11 @@ mod tests {
                 let rhs = Operand::Symbol("x".to_string());
                 let op = Operation::Add;
                 Operand::Term(Box::new(Term { lhs, rhs, op }))
-            }
+            },
         };
         let statement = Statement::Function {
             name: "f".to_string(),
-            fun
+            fun,
         };
         assert_eq!(Ok(statement), parse("f(x) := 1 + x"));
     }
@@ -358,7 +360,7 @@ mod tests {
             params: Vec::new(),
         };
         let op = Operand::FunCall(fun_call);
-        let stat = Statement::Expression {op};
+        let stat = Statement::Expression { op };
         assert_eq!(Ok(stat), parse("fun()"));
     }
 
@@ -369,7 +371,7 @@ mod tests {
             params: vec![Operand::Symbol("x".to_string())],
         };
         let op = Operand::FunCall(fun_call);
-        let stat = Statement::Expression {op};
+        let stat = Statement::Expression { op };
         assert_eq!(Ok(stat), parse("fun(x)"));
     }
 
@@ -380,7 +382,7 @@ mod tests {
             params: vec![Operand::Number(42.0)],
         };
         let op = Operand::FunCall(fun_call);
-        let stat = Statement::Expression {op};
+        let stat = Statement::Expression { op };
         assert_eq!(Ok(stat), parse("fun(42)"));
     }
 }

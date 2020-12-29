@@ -76,7 +76,9 @@ impl Calculator {
                 self.env.put(sym, calc_operand(&op, &self.env)?);
                 Ok(None)
             }
-            Statement::SolveFor { lhs, rhs, sym } => Ok(Some(solve_for(&lhs, &rhs, &sym, &self.env)?)),
+            Statement::SolveFor { lhs, rhs, sym } => {
+                Ok(Some(solve_for(&lhs, &rhs, &sym, &self.env)?))
+            }
             Statement::Function { name, fun } => {
                 self.env.put_fun(name, fun);
                 Ok(None)

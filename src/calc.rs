@@ -7,8 +7,14 @@ use thiserror::Error;
 pub enum CalcError {
     #[error("Unknown symbol `{0}`")]
     UnknownSymbol(String),
-    #[error("Unexpected number of parameters for call to `{name}` - expected {exp}, but got {act}")]
-    UnexpectedNumberOfParameters { name: String, act: usize, exp: usize },
+    #[error(
+        "Unexpected number of parameters for call to `{name}` - expected {exp}, but got {act}"
+    )]
+    UnexpectedNumberOfParameters {
+        name: String,
+        act: usize,
+        exp: usize,
+    },
     #[error("Unknown function `{0}`")]
     UnknownFunction(String),
 }
@@ -75,7 +81,9 @@ pub fn calc_term(term: &Term, env: &dyn Env) -> Result<Number, CalcError> {
 }
 
 pub fn calc_function_call(fun_call: &FunCall, env: &dyn Env) -> Result<Number, CalcError> {
-    let function = env.get_fun(&fun_call.name).ok_or_else(|| CalcError::UnknownFunction(fun_call.name.to_string()))?;
+    let function = env
+        .get_fun(&fun_call.name)
+        .ok_or_else(|| CalcError::UnknownFunction(fun_call.name.to_string()))?;
     if fun_call.params.len() != function.args.len() {
         return Err(CalcError::UnexpectedNumberOfParameters {
             name: fun_call.name.clone(),
@@ -83,13 +91,27 @@ pub fn calc_function_call(fun_call: &FunCall, env: &dyn Env) -> Result<Number, C
             exp: function.args.len(),
         });
     }
-    let params = fun_call.params.iter().try_fold(Vec::new(), |mut params, op| {
-        params.push(calc_operand(op, env)?);
-        Ok(params)
-    })?;
-    let fun_env: HashMap<String, Number> = function.args.iter().zip(params.iter()).map(|(arg, num)| (arg.clone(), *num)).collect();
+    let params = fun_call
+        .params
+        .iter()
+        .try_fold(Vec::new(), |mut params, op| {
+            params.push(calc_operand(op, env)?);
+            Ok(params)
+        })?;
+    let fun_env: HashMap<String, Number> = function
+        .args
+        .iter()
+        .zip(params.iter())
+        .map(|(arg, num)| (arg.clone(), *num))
+        .collect();
     //let env: HashMap<String, Number> = function.args.iter().zip(params.iter()).cloned().collect();
-    calc_operand(&function.body, &ScopedEnv { parent: env, env: fun_env })
+    calc_operand(
+        &function.body,
+        &ScopedEnv {
+            parent: env,
+            env: fun_env,
+        },
+    )
 }
 
 pub fn calc_operand(op: &Operand, env: &dyn Env) -> Result<Number, CalcError> {
@@ -155,7 +177,10 @@ mod tests {
         let lhs = Operand::Number(3.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Add;
-        assert_eq!(Ok(7.0), calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default()));
+        assert_eq!(
+            Ok(7.0),
+            calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default())
+        );
     }
 
     #[test]
@@ -163,7 +188,10 @@ mod tests {
         let lhs = Operand::Number(3.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Sub;
-        assert_eq!(Ok(-1.0), calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default()));
+        assert_eq!(
+            Ok(-1.0),
+            calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default())
+        );
     }
 
     #[test]
@@ -171,7 +199,10 @@ mod tests {
         let lhs = Operand::Number(3.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Mul;
-        assert_eq!(Ok(12.0), calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default()));
+        assert_eq!(
+            Ok(12.0),
+            calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default())
+        );
     }
 
     #[test]
@@ -179,7 +210,10 @@ mod tests {
         let lhs = Operand::Number(12.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Div;
-        assert_eq!(Ok(3.0), calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default()));
+        assert_eq!(
+            Ok(3.0),
+            calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default())
+        );
     }
 
     #[test]
@@ -187,7 +221,10 @@ mod tests {
         let lhs = Operand::Number(14.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Rem;
-        assert_eq!(Ok(2.0), calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default()));
+        assert_eq!(
+            Ok(2.0),
+            calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default())
+        );
     }
 
     #[test]
@@ -195,7 +232,10 @@ mod tests {
         let lhs = Operand::Number(3.0);
         let rhs = Operand::Number(4.0);
         let op = Operation::Pow;
-        assert_eq!(Ok(81.0), calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default()));
+        assert_eq!(
+            Ok(81.0),
+            calc_term(&Term { op, lhs, rhs }, &TopLevelEnv::default())
+        );
     }
 
     #[test]
@@ -217,7 +257,7 @@ mod tests {
         funs.insert("fun".to_string(), function);
         let env = TopLevelEnv {
             vars: HashMap::new(),
-            funs
+            funs,
         };
         let expr = Operand::FunCall(FunCall {
             name: "fun".to_string(),

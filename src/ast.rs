@@ -39,7 +39,7 @@ pub struct Term {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Function {
-    pub args : Vec<String>,
+    pub args: Vec<String>,
     pub body: Operand,
 }
 
@@ -69,7 +69,7 @@ pub enum Statement {
     Function {
         name: String,
         fun: Function,
-    }
+    },
 }
 
 #[cfg(test)]
