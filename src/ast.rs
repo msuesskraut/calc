@@ -9,10 +9,7 @@ pub enum Operand {
 
 impl Operand {
     pub fn is_symbol(&self, sym: &str) -> bool {
-        match self {
-            Operand::Symbol(s) if s == sym => true,
-            _ => false,
-        }
+        matches!(self, Operand::Symbol(s) if s == sym)
     }
 }
 

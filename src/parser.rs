@@ -101,9 +101,9 @@ fn parse_operand(expression: Pairs<Rule>) -> Result<Operand, ParserError> {
 fn parse_assignment(assignment: Pairs<Rule>) -> Result<Statement, ParserError> {
     let mut it = assignment;
 
-    let sym = it.next().ok_or(ParserError::MissingAssignmentTarget(
-        it.as_str().to_string(),
-    ))?;
+    let sym = it.next().ok_or_else(|| ParserError::MissingAssignmentTarget(
+        it.as_str().to_string())
+    )?;
 
     let sym = if Rule::symbol == sym.as_rule() {
         Ok(sym.as_str())
@@ -114,7 +114,7 @@ fn parse_assignment(assignment: Pairs<Rule>) -> Result<Statement, ParserError> {
 
     let op = parse_operand(
         it.next()
-            .ok_or(ParserError::MissingAssignmentExpression(
+            .ok_or_else(|| ParserError::MissingAssignmentExpression(
                 it.as_str().to_string(),
             ))?
             .into_inner(),
@@ -127,21 +127,21 @@ fn parse_solve_for(solve_for: Pairs<Rule>) -> Result<Statement, ParserError> {
 
     let lhs = parse_operand(
         it.next()
-            .ok_or(ParserError::MissingSolveForLeftExpression(
+            .ok_or_else(|| ParserError::MissingSolveForLeftExpression(
                 it.as_str().to_string(),
             ))?
             .into_inner(),
     )?;
     let rhs = parse_operand(
         it.next()
-            .ok_or(ParserError::MissingSolveForRightExpression(
+            .ok_or_else(|| ParserError::MissingSolveForRightExpression(
                 it.as_str().to_string(),
             ))?
             .into_inner(),
     )?;
     let sym = it
         .next()
-        .ok_or(ParserError::MissingSolveForSymbol(it.as_str().to_string()))?;
+        .ok_or_else(|| ParserError::MissingSolveForSymbol(it.as_str().to_string()))?;
     let sym = if Rule::symbol == sym.as_rule() {
         Ok(sym.as_str())
     } else {
@@ -152,21 +152,19 @@ fn parse_solve_for(solve_for: Pairs<Rule>) -> Result<Statement, ParserError> {
     Ok(Statement::SolveFor { lhs, rhs, sym })
 }
 fn parse_statement(statements: Pairs<Rule>) -> Result<Statement, ParserError> {
-    for statement in statements {
-        return match statement.as_rule() {
-            Rule::assignment => parse_assignment(statement.into_inner()),
-            Rule::expr => Ok(Statement::Expression {
-                op: parse_operand(Pairs::single(statement))?,
-            }),
-            Rule::solvefor => parse_solve_for(statement.into_inner()),
-            r => Err(ParserError::InvalidStatement(format!(
-                "Unexpected rule: {:?}",
-                r
-            ))),
-        };
+    let mut it = statements;
+    let statement = it.next().ok_or( ParserError::EmptyStatement)?;
+    match statement.as_rule() {
+        Rule::assignment => parse_assignment(statement.into_inner()),
+        Rule::expr => Ok(Statement::Expression {
+            op: parse_operand(Pairs::single(statement))?,
+        }),
+        Rule::solvefor => parse_solve_for(statement.into_inner()),
+        r => Err(ParserError::InvalidStatement(format!(
+            "Unexpected rule: {:?}",
+            r
+        ))),
     }
-
-    return Err(ParserError::EmptyStatement);
 }
 
 pub fn parse(cmd: &str) -> Result<Statement, ParserError> {
