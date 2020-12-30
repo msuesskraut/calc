@@ -8,3 +8,7 @@
 See library at work as a webapp at: [https://msuesskraut.github.io/calc/index.html](https://msuesskraut.github.io/calc/index.html)
 
 See also a command line version of calculator with a in `examples/repl.rs`.
+
+## License
+
+[MIT](LICENSE)
