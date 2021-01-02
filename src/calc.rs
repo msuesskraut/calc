@@ -53,12 +53,12 @@ impl Env for TopLevelEnv {
 
 struct ScopedEnv<'a> {
     parent: &'a dyn Env,
-    env: HashMap<String, Number>,
+    env: HashMap<&'a str, &'a Number>,
 }
 
 impl<'a> Env for ScopedEnv<'a> {
     fn get(&self, sym: &str) -> Option<&Number> {
-        self.env.get(sym).or_else(|| self.parent.get(sym))
+        self.env.get(sym).map(|num| *num).or_else(|| self.parent.get(sym))
     }
 
     fn get_fun(&self, fun: &str) -> Option<&Function> {
@@ -98,11 +98,11 @@ pub fn calc_function_call(fun_call: &FunCall, env: &dyn Env) -> Result<Number, C
             params.push(calc_operand(op, env)?);
             Ok(params)
         })?;
-    let fun_env: HashMap<String, Number> = function
+    let fun_env: HashMap<&str, &Number> = function
         .args
         .iter()
         .zip(params.iter())
-        .map(|(arg, num)| (arg.clone(), *num))
+        .map(|(arg, num)| (arg.as_str(), num))
         .collect();
     //let env: HashMap<String, Number> = function.args.iter().zip(params.iter()).cloned().collect();
     calc_operand(
