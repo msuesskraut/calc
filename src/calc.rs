@@ -58,10 +58,7 @@ struct ScopedEnv<'a> {
 
 impl<'a> Env for ScopedEnv<'a> {
     fn get(&self, sym: &str) -> Option<&Number> {
-        self.env
-            .get(sym)
-            .copied()
-            .or_else(|| self.parent.get(sym))
+        self.env.get(sym).copied().or_else(|| self.parent.get(sym))
     }
 
     fn get_fun(&self, fun: &str) -> Option<&Function> {

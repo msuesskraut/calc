@@ -7,8 +7,8 @@ mod solver;
 pub use crate::ast::Number;
 use crate::ast::Statement;
 use crate::calc::{calc_operand, CalcError, TopLevelEnv};
-pub use crate::graph::{ Range, Plot };
 use crate::graph::GraphError;
+pub use crate::graph::{Plot, Range};
 use crate::parser::{parse, ParserError};
 use crate::solver::{solve_for, SolverError};
 
@@ -35,10 +35,7 @@ pub enum Error {
 pub enum Value {
     Void,
     Number(Number),
-    Solved {
-        variable: String,
-        value: Number,
-    },
+    Solved { variable: String, value: Number },
     Plot(Plot),
 }
 
@@ -106,20 +103,16 @@ impl Calculator {
             Statement::Assignment { sym, op } => {
                 self.env.put(sym, calc_operand(&op, &self.env)?);
                 Ok(Value::Void)
-            },
-            Statement::SolveFor { lhs, rhs, sym } => {
-                Ok(Value::Solved {
-                    variable: sym.to_string(),
-                    value: solve_for(&lhs, &rhs, &sym, &self.env)?
-                })
-            },
+            }
+            Statement::SolveFor { lhs, rhs, sym } => Ok(Value::Solved {
+                variable: sym.to_string(),
+                value: solve_for(&lhs, &rhs, &sym, &self.env)?,
+            }),
             Statement::Function { name, fun } => {
                 self.env.put_fun(name, fun);
                 Ok(Value::Void)
-            },
-            Statement::Plot { name } => {
-                Ok(Value::Plot(Plot::new(&name, &self.env)?))
             }
+            Statement::Plot { name } => Ok(Value::Plot(Plot::new(&name, &self.env)?)),
         }
     }
 
@@ -149,13 +142,22 @@ mod tests {
     fn simple_function() {
         let mut calc = Calculator::new();
         assert_eq!(Ok(Value::Void), calc.execute("fun(x, y) := y - x"));
-        assert_eq!(Ok(Value::Number(20.0)), calc.execute("fun(1 + 2, 3 * 9) - 4"));
+        assert_eq!(
+            Ok(Value::Number(20.0)),
+            calc.execute("fun(1 + 2, 3 * 9) - 4")
+        );
     }
 
     #[test]
     fn simple_solve_for() {
         let mut calc = Calculator::new();
-        assert_eq!(Ok(Value::Solved { variable: "y".to_string(), value: 4.0 }), calc.execute("solve 3 * y - 2 = y + 6 for y"));
+        assert_eq!(
+            Ok(Value::Solved {
+                variable: "y".to_string(),
+                value: 4.0
+            }),
+            calc.execute("solve 3 * y - 2 = y + 6 for y")
+        );
     }
 
     #[test]

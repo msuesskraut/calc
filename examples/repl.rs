@@ -1,4 +1,4 @@
-use rust_expression::{ Calculator, Plot, Value, Number };
+use rust_expression::{Calculator, Number, Plot, Value};
 
 use linefeed::{Interface, ReadResult};
 
@@ -11,11 +11,15 @@ fn draw(calculator: &Calculator, plot: &Plot) {
 
     let mut chart = vec![vec![' '; WIDTH]; HEIGHT];
 
-    for w in 0 .. WIDTH {
-        let x = plot.x_range.min + ((plot.x_range.max - plot.x_range.min) / (WIDTH as Number) * (w as Number));
+    for w in 0..WIDTH {
+        let x = plot.x_range.min
+            + ((plot.x_range.max - plot.x_range.min) / (WIDTH as Number) * (w as Number));
         if let Some(y) = calculator.calc(x, plot) {
             if y >= plot.y_range.min && y <= plot.y_range.max {
-                let h = HEIGHT - ((y - plot.y_range.min) / ((plot.y_range.max - plot.y_range.min) / (HEIGHT as Number))) as usize;
+                let h = HEIGHT
+                    - ((y - plot.y_range.min)
+                        / ((plot.y_range.max - plot.y_range.min) / (HEIGHT as Number)))
+                        as usize;
                 if w < WIDTH && h < HEIGHT {
                     chart[h][w] = '*';
                 }
@@ -55,7 +59,7 @@ fn main() -> io::Result<()> {
         match calc.execute(&line) {
             Ok(Value::Number(num)) => println!("{:}", num),
             Ok(Value::Void) => (),
-            Ok(Value::Solved { variable, value}) => println!("{:} = {:}", variable, value),
+            Ok(Value::Solved { variable, value }) => println!("{:} = {:}", variable, value),
             Ok(Value::Plot(plot)) => draw(&calc, &plot),
             Err(err) => println!("Error: {:}", err),
         }

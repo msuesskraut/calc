@@ -81,9 +81,7 @@ impl Plot {
         Ok(Plot {
             x_range,
             y_range,
-            graph: Graph {
-                fun: fun.clone(),
-            },
+            graph: Graph { fun: fun.clone() },
         })
     }
 }
