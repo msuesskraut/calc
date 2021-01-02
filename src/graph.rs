@@ -1,5 +1,8 @@
-use crate::{ast::{ Function, Number }, calc::TopLevelEnv};
-use crate::calc::{Env, calc_operand};
+use crate::calc::{calc_operand, Env};
+use crate::{
+    ast::{Function, Number},
+    calc::TopLevelEnv,
+};
 
 use thiserror::Error;
 
@@ -49,7 +52,7 @@ impl<'a> Graph for FunctionGraph<'a> {
         let call_env = ArgEnv {
             name: self.x_name(),
             value: x,
-            env: self.env
+            env: self.env,
         };
         calc_operand(&self.fun.body, &call_env).ok()
     }
@@ -63,7 +66,7 @@ struct Range {
 
 impl Range {
     pub fn new(min: Number, max: Number) -> Range {
-        Range {min, max}
+        Range { min, max }
     }
 }
 
@@ -75,7 +78,9 @@ struct Plot<'a> {
 
 impl<'a> Plot<'a> {
     pub fn new(name: &str, env: &'a TopLevelEnv) -> Result<Plot<'a>, GraphError> {
-        let fun = env.get_fun(name).ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?;
+        let fun = env
+            .get_fun(name)
+            .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?;
         let x_range = Range::new(-100., 100.);
         let y_range = Range::new(-100., 100.);
         Ok(Plot {
@@ -83,8 +88,8 @@ impl<'a> Plot<'a> {
             y_range,
             graph: FunctionGraph {
                 fun: fun.clone(),
-                env
-            }
+                env,
+            },
         })
     }
 
@@ -96,7 +101,7 @@ impl<'a> Plot<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{ Operand, Operation, Term };
+    use crate::ast::{Operand, Operation, Term};
     use crate::calc::TopLevelEnv;
 
     #[test]
@@ -105,7 +110,11 @@ mod tests {
         env.put("x".to_string(), -19.0);
         let name = "x";
         let value = 42.0;
-        let env = ArgEnv { name, value, env: &env };
+        let env = ArgEnv {
+            name,
+            value,
+            env: &env,
+        };
         assert_eq!(Some(&42.0), env.get("x"));
     }
 
@@ -115,7 +124,11 @@ mod tests {
         env.put("y".to_string(), -19.0);
         let name = "x";
         let value = 42.0;
-        let env = ArgEnv { name, value, env: &env };
+        let env = ArgEnv {
+            name,
+            value,
+            env: &env,
+        };
         assert_eq!(Some(&-19.0), env.get("y"));
     }
 
@@ -142,7 +155,7 @@ mod tests {
         let body = Operand::Term(Box::new(term));
         let fun = Function {
             args: vec!["x".to_string()],
-            body
+            body,
         };
         env.put_fun("f".to_string(), fun);
         let plot = Plot::new("f", &env).unwrap();

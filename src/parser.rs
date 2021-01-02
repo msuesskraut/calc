@@ -208,7 +208,9 @@ fn parse_plot(plot: Pairs<Rule>) -> Result<Statement, ParserError> {
     let mut it = plot;
     let fun = it.next().ok_or(ParserError::PlotMissingFunction)?;
     match fun.as_rule() {
-        Rule::symbol => Ok(Statement::Plot { name: fun.as_str().to_string() }),
+        Rule::symbol => Ok(Statement::Plot {
+            name: fun.as_str().to_string(),
+        }),
         _ => Err(ParserError::PlotUnexpectedSymbol(fun.as_str().to_string())),
     }
 }
@@ -402,7 +404,9 @@ mod tests {
 
     #[test]
     fn parse_plot() {
-        let stat = Statement::Plot { name: "fun".to_string() };
+        let stat = Statement::Plot {
+            name: "fun".to_string(),
+        };
         assert_eq!(Ok(stat), parse("plot fun"));
     }
 }

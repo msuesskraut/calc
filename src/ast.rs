@@ -72,7 +72,7 @@ pub enum Statement {
     },
     Plot {
         name: String,
-    }
+    },
 }
 
 #[cfg(test)]

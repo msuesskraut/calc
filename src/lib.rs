@@ -76,14 +76,14 @@ impl Calculator {
             Statement::Assignment { sym, op } => {
                 self.env.put(sym, calc_operand(&op, &self.env)?);
                 Ok(None)
-            },
+            }
             Statement::SolveFor { lhs, rhs, sym } => {
                 Ok(Some(solve_for(&lhs, &rhs, &sym, &self.env)?))
-            },
+            }
             Statement::Function { name, fun } => {
                 self.env.put_fun(name, fun);
                 Ok(None)
-            },
+            }
             Statement::Plot { name } => unimplemented!(),
         }
     }
