@@ -60,7 +60,7 @@ impl<'a> Env for ScopedEnv<'a> {
     fn get(&self, sym: &str) -> Option<&Number> {
         self.env
             .get(sym)
-            .map(|num| *num)
+            .copied()
             .or_else(|| self.parent.get(sym))
     }
 
