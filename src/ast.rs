@@ -70,6 +70,9 @@ pub enum Statement {
         name: String,
         fun: Function,
     },
+    Plot {
+        name: String,
+    }
 }
 
 #[cfg(test)]

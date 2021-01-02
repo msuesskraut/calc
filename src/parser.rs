@@ -45,6 +45,10 @@ pub enum ParserError {
     MissingFunctionBody,
     #[error("Expected expression as parameter value, but got `{0}`")]
     ExpectedParamExpression(String),
+    #[error("Plot is missing a function name, but got nothing")]
+    PlotMissingFunction,
+    #[error("Expected function name, but got {0}")]
+    PlotUnexpectedSymbol(String),
 }
 
 #[derive(Parser)]
@@ -200,6 +204,15 @@ fn parse_function(function: Pairs<Rule>) -> Result<Statement, ParserError> {
     Err(ParserError::MissingFunctionBody)
 }
 
+fn parse_plot(plot: Pairs<Rule>) -> Result<Statement, ParserError> {
+    let mut it = plot;
+    let fun = it.next().ok_or(ParserError::PlotMissingFunction)?;
+    match fun.as_rule() {
+        Rule::symbol => Ok(Statement::Plot { name: fun.as_str().to_string() }),
+        _ => Err(ParserError::PlotUnexpectedSymbol(fun.as_str().to_string())),
+    }
+}
+
 fn parse_statement(statements: Pairs<Rule>) -> Result<Statement, ParserError> {
     let mut it = statements;
     let statement = it.next().ok_or(ParserError::EmptyStatement)?;
@@ -210,6 +223,7 @@ fn parse_statement(statements: Pairs<Rule>) -> Result<Statement, ParserError> {
         }),
         Rule::solvefor => parse_solve_for(statement.into_inner()),
         Rule::function => parse_function(statement.into_inner()),
+        Rule::plot => parse_plot(statement.into_inner()),
         r => Err(ParserError::InvalidStatement(format!(
             "Unexpected rule: {:?}",
             r
@@ -384,5 +398,11 @@ mod tests {
         let op = Operand::FunCall(fun_call);
         let stat = Statement::Expression { op };
         assert_eq!(Ok(stat), parse("fun(42)"));
+    }
+
+    #[test]
+    fn parse_plot() {
+        let stat = Statement::Plot { name: "fun".to_string() };
+        assert_eq!(Ok(stat), parse("plot fun"));
     }
 }

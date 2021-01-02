@@ -24,6 +24,8 @@ assignment = { symbol ~ ":=" ~ expr }
 
 solvefor = { "solve" ~ expr ~ "=" ~ expr ~ "for" ~ symbol }
 
-statement = _{ SOI ~ ( function | solvefor | assignment | expr ) ~ EOI }
+plot = { "plot" ~ symbol }
+
+statement = _{ SOI ~ ( function | plot | solvefor | assignment | expr ) ~ EOI }
 
 WHITESPACE = _{ " " | "\t" }
