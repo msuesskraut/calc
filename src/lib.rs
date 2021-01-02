@@ -4,8 +4,11 @@ mod graph;
 mod parser;
 mod solver;
 
-use crate::ast::{Number, Statement};
+pub use crate::ast::Number;
+use crate::ast::Statement;
 use crate::calc::{calc_operand, CalcError, TopLevelEnv};
+pub use crate::graph::{ Range, Plot };
+use crate::graph::GraphError;
 use crate::parser::{parse, ParserError};
 use crate::solver::{solve_for, SolverError};
 
@@ -23,6 +26,20 @@ pub enum Error {
     /// errors derived from solver
     #[error(transparent)]
     SolverError(#[from] SolverError),
+    /// errors derived from graph
+    #[error(transparent)]
+    GraphError(#[from] GraphError),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Value {
+    Void,
+    Number(Number),
+    Solved {
+        variable: String,
+        value: Number,
+    },
+    Plot(Plot),
 }
 
 /// # Calculator
@@ -41,51 +58,73 @@ impl Calculator {
     }
 
     /// Executes a command line.
-    /// 3 kinds of statements are supported:
+    /// These kinds of statements are supported:
     /// - Expression:
     ///   ```
-    ///   use rust_expression::Calculator;
+    ///   use rust_expression::{Calculator, Value};
     ///   let mut c = Calculator::new();
-    ///   assert_eq!(Ok(Some(3.0)), c.execute("1 + 2"));
+    ///   assert_eq!(Ok(Value::Number(3.0)), c.execute("1 + 2"));
     ///   ```
     /// - Variable assignments:
     ///   ```
-    ///   # use rust_expression::Calculator;
+    ///   # use rust_expression::{Calculator, Value};
     ///   # let mut c = Calculator::new();
-    ///   assert_eq!(Ok(None), c.execute("a := 6"));
-    ///   assert_eq!(Ok(Some(36.0)), c.execute("a ^ 2"));
+    ///   assert_eq!(Ok(Value::Void), c.execute("a := 6"));
+    ///   assert_eq!(Ok(Value::Number(36.0)), c.execute("a ^ 2"));
     ///   ```
     /// - Solving linear expressions:
     ///   ```
-    ///   # use rust_expression::Calculator;
+    ///   # use rust_expression::{Calculator, Value};
     ///   # let mut c = Calculator::new();
     ///   # c.execute("a := 6");
-    ///   assert_eq!(Ok(Some(4.0)), c.execute("solve 3 * x - 2 = x + a for x"));
+    ///   assert_eq!(Ok(Value::Solved {variable: "x".to_string(), value: 4.0}), c.execute("solve 3 * x - 2 = x + a for x"));
     ///   ```
     /// - Function definition:
     ///   ```
-    ///   # use rust_expression::Calculator;
+    ///   # use rust_expression::{Calculator, Value};
     ///   # let mut c = Calculator::new();
-    ///   assert_eq!(Ok(None), c.execute("fun(x, y) := y - x"));
-    ///   assert_eq!(Ok(Some(20.0)), c.execute("fun(1 + 2, 3 * 9) - 4"));
+    ///   # c.execute("a := 6");
+    ///   assert_eq!(Ok(Value::Void), c.execute("fun(x, y) := y - x"));
+    ///   assert_eq!(Ok(Value::Number(2.0)), c.execute("fun(1.5 * 2, 3 + a) - 4"));
     ///   ```
-    pub fn execute(&mut self, line: &str) -> Result<Option<Number>, Error> {
+    /// - Create a plot:
+    ///   ```
+    ///   # use rust_expression::{Calculator, Value};
+    ///   # let mut c = Calculator::new();
+    ///   assert_eq!(Ok(Value::Void), c.execute("f(x) := x ^ 2"));
+    ///
+    ///   match c.execute("plot f") {
+    ///       Ok(Value::Plot(plot)) => assert_eq!(Some(100.0), c.calc(10.0, &plot)),
+    ///       // ...
+    ///   #   _ => unimplemented!(),
+    ///   }
+    ///   ```
+    pub fn execute(&mut self, line: &str) -> Result<Value, Error> {
         let st = parse(line)?;
         match st {
-            Statement::Expression { op } => Ok(Some(calc_operand(&op, &self.env)?)),
+            Statement::Expression { op } => Ok(Value::Number(calc_operand(&op, &self.env)?)),
             Statement::Assignment { sym, op } => {
                 self.env.put(sym, calc_operand(&op, &self.env)?);
-                Ok(None)
-            }
+                Ok(Value::Void)
+            },
             Statement::SolveFor { lhs, rhs, sym } => {
-                Ok(Some(solve_for(&lhs, &rhs, &sym, &self.env)?))
-            }
+                Ok(Value::Solved {
+                    variable: sym.to_string(),
+                    value: solve_for(&lhs, &rhs, &sym, &self.env)?
+                })
+            },
             Statement::Function { name, fun } => {
                 self.env.put_fun(name, fun);
-                Ok(None)
+                Ok(Value::Void)
+            },
+            Statement::Plot { name } => {
+                Ok(Value::Plot(Plot::new(&name, &self.env)?))
             }
-            Statement::Plot { name } => unimplemented!(),
         }
+    }
+
+    pub fn calc(&self, x: Number, plot: &Plot) -> Option<Number> {
+        plot.graph.calc(x, &self.env)
     }
 }
 
@@ -96,20 +135,37 @@ mod tests {
     #[test]
     fn simple_calc() {
         let mut calc = Calculator::new();
-        assert_eq!(Ok(Some(3.0)), calc.execute("1 + 2"));
+        assert_eq!(Ok(Value::Number(3.0)), calc.execute("1 + 2"));
     }
 
     #[test]
     fn simple_assign() {
         let mut calc = Calculator::new();
-        assert_eq!(Ok(None), calc.execute("a := 1"));
-        assert_eq!(Ok(Some(1.0)), calc.execute("a"));
+        assert_eq!(Ok(Value::Void), calc.execute("a := 1"));
+        assert_eq!(Ok(Value::Number(1.0)), calc.execute("a"));
     }
 
     #[test]
     fn simple_function() {
         let mut calc = Calculator::new();
-        assert_eq!(Ok(None), calc.execute("fun(x, y) := y - x"));
-        assert_eq!(Ok(Some(20.0)), calc.execute("fun(1 + 2, 3 * 9) - 4"));
+        assert_eq!(Ok(Value::Void), calc.execute("fun(x, y) := y - x"));
+        assert_eq!(Ok(Value::Number(20.0)), calc.execute("fun(1 + 2, 3 * 9) - 4"));
+    }
+
+    #[test]
+    fn simple_solve_for() {
+        let mut calc = Calculator::new();
+        assert_eq!(Ok(Value::Solved { variable: "y".to_string(), value: 4.0 }), calc.execute("solve 3 * y - 2 = y + 6 for y"));
+    }
+
+    #[test]
+    fn simple_plot() {
+        let mut calc = Calculator::new();
+        assert_eq!(Ok(Value::Void), calc.execute("f(x) := x ^ 2"));
+        let plot = calc.execute("plot f").unwrap();
+        assert!(matches!(plot, Value::Plot(_)));
+        if let Value::Plot(plot) = plot {
+            assert_eq!(Some(100.0), calc.calc(10.0, &plot));
+        }
     }
 }

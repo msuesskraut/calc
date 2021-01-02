@@ -6,25 +6,10 @@ use crate::{
 
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq, Eq)]
 pub enum GraphError {
     #[error("Unknown function `{0}` to plot")]
     UnknownFunction(String),
-}
-
-trait Graph {
-    fn calc(&self, x: Number) -> Option<Number>;
-}
-
-struct FunctionGraph<'a> {
-    fun: Function,
-    env: &'a dyn Env,
-}
-
-impl<'a> FunctionGraph<'a> {
-    fn x_name(&self) -> &str {
-        &self.fun.args[0]
-    }
 }
 
 struct ArgEnv<'a> {
@@ -47,21 +32,30 @@ impl<'a> Env for ArgEnv<'a> {
     }
 }
 
-impl<'a> Graph for FunctionGraph<'a> {
-    fn calc(&self, x: Number) -> Option<Number> {
+#[derive(Debug, PartialEq)]
+pub struct Graph {
+    fun: Function,
+}
+
+impl Graph {
+    pub fn x_name(&self) -> &str {
+        &self.fun.args[0]
+    }
+
+    pub fn calc(&self, x: Number, env: &dyn Env) -> Option<Number> {
         let call_env = ArgEnv {
             name: self.x_name(),
             value: x,
-            env: self.env,
+            env,
         };
         calc_operand(&self.fun.body, &call_env).ok()
     }
 }
 
 #[derive(Debug, PartialEq)]
-struct Range {
-    min: Number,
-    max: Number,
+pub struct Range {
+    pub min: Number,
+    pub max: Number,
 }
 
 impl Range {
@@ -70,14 +64,15 @@ impl Range {
     }
 }
 
-struct Plot<'a> {
+#[derive(Debug, PartialEq)]
+pub struct Plot {
     pub x_range: Range,
     pub y_range: Range,
-    graph: FunctionGraph<'a>,
+    pub graph: Graph,
 }
 
-impl<'a> Plot<'a> {
-    pub fn new(name: &str, env: &'a TopLevelEnv) -> Result<Plot<'a>, GraphError> {
+impl Plot {
+    pub fn new(name: &str, env: &TopLevelEnv) -> Result<Plot, GraphError> {
         let fun = env
             .get_fun(name)
             .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?;
@@ -86,15 +81,10 @@ impl<'a> Plot<'a> {
         Ok(Plot {
             x_range,
             y_range,
-            graph: FunctionGraph {
+            graph: Graph {
                 fun: fun.clone(),
-                env,
             },
         })
-    }
-
-    pub fn get_graph(&self) -> &dyn Graph {
-        &self.graph
     }
 }
 
@@ -139,8 +129,8 @@ mod tests {
             body: Operand::Symbol("x".to_string()),
         };
         let env = TopLevelEnv::default();
-        let graph = FunctionGraph { fun, env: &env };
-        assert_eq!(Some(1.0), graph.calc(1.0));
+        let graph = Graph { fun };
+        assert_eq!(Some(1.0), graph.calc(1.0, &env));
     }
 
     #[test]
@@ -159,6 +149,6 @@ mod tests {
         };
         env.put_fun("f".to_string(), fun);
         let plot = Plot::new("f", &env).unwrap();
-        assert_eq!(Some(4.0), plot.get_graph().calc(2.0));
+        assert_eq!(Some(4.0), plot.graph.calc(2.0, &env));
     }
 }
