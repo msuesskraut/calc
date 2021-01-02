@@ -1,9 +1,8 @@
 [package]
 name = "rust-expression"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Martin Suesskraut <martin.suesskraut@gmail.com>"]
 license = "MIT"
-license-file = "LICENSE"
 edition = "2018"
 
 description = "Calculator and solver for linear equations."
