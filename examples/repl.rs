@@ -1,4 +1,4 @@
-use rust_expression::{Calculator, Number, Plot, Value};
+use rust_expression::{Calculator, Plot, Range, Value};
 
 use linefeed::{Interface, ReadResult};
 
@@ -6,29 +6,25 @@ use std::io;
 use std::sync::Arc;
 
 fn draw(calculator: &Calculator, plot: &Plot) {
-    const WIDTH: usize = 60;
-    const HEIGHT: usize = 25;
+    const WIDTH: i32 = 60;
+    const HEIGHT: i32 = 25;
 
-    let mut chart = vec![vec![' '; WIDTH]; HEIGHT];
+    let mut chart = vec![vec![' '; WIDTH as usize]; HEIGHT as usize];
+    let x_screen = Range::new(0, WIDTH);
+    let y_screen = Range::new(0, HEIGHT);
 
     for w in 0..WIDTH {
-        let x = plot.x_range.min
-            + ((plot.x_range.max - plot.x_range.min) / (WIDTH as Number) * (w as Number));
-        if let Some(y) = calculator.calc(x, plot) {
-            if y >= plot.y_range.min && y <= plot.y_range.max {
-                let h = HEIGHT
-                    - ((y - plot.y_range.min)
-                        / ((plot.y_range.max - plot.y_range.min) / (HEIGHT as Number)))
-                        as usize;
-                if w < WIDTH && h < HEIGHT {
-                    chart[h][w] = '*';
-                }
+        let x = x_screen.project(w, &plot.x_range).unwrap();
+        if let Some(Some(y)) = calculator.calc(x, plot).map(|y| plot.y_range.project(y, &y_screen)) {
+            let h = HEIGHT - (y as i32);
+            if h < HEIGHT {
+                chart[h as usize][w as usize] = '*';
             }
         }
     }
 
     for line in chart {
-        let mut s = String::with_capacity(WIDTH);
+        let mut s = String::with_capacity(WIDTH as usize);
         for ch in line {
             s.push(ch);
         }

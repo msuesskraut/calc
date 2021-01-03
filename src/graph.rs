@@ -6,6 +6,10 @@ use crate::{
 
 use thiserror::Error;
 
+use std::cmp::{PartialEq, PartialOrd};
+use std::fmt::Debug;
+use std::ops::Sub;
+
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum GraphError {
     #[error("Unknown function `{0}` to plot")]
@@ -53,21 +57,43 @@ impl Graph {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Range {
+pub struct Range<Number: Debug + PartialEq> {
     pub min: Number,
     pub max: Number,
 }
 
-impl Range {
-    pub fn new(min: Number, max: Number) -> Range {
+impl<Number: Debug + Copy + PartialEq + PartialOrd + Sub + Sub<Output = Number>> Range<Number> {
+    pub fn new(min: Number, max: Number) -> Range<Number> {
+        if min >= max {
+            panic!(format!("min {:?} must be smaller than max {:?}", min, max));
+        }
         Range { min, max }
+    }
+
+    pub fn get_distance(&self) -> Number {
+        self.max - self.min
+    }
+
+    pub fn project<OtherNumber>(&self, pixel: Number, to: &Range<OtherNumber>) -> Option<f64>
+    where
+        Number: Into<f64>,
+        OtherNumber:
+            Debug + Copy + PartialEq + PartialOrd + Sub + Sub<Output = OtherNumber> + Into<f64>,
+    {
+        if (self.min..self.max).contains(&pixel) {
+            Some(
+                to.min.into() + (((pixel - self.min).into()) / (self.get_distance().into()) * to.get_distance().into()),
+            )
+        } else {
+            None
+        }
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Plot {
-    pub x_range: Range,
-    pub y_range: Range,
+    pub x_range: Range<Number>,
+    pub y_range: Range<Number>,
     pub graph: Graph,
 }
 
@@ -129,6 +155,62 @@ mod tests {
         let env = TopLevelEnv::default();
         let graph = Graph { fun };
         assert_eq!(Some(1.0), graph.calc(1.0, &env));
+    }
+
+    #[test]
+    #[should_panic(expected = "min 4 must be smaller than max 3")]
+    fn range_construct_failure() {
+        let _ = Range::new(4, 3);
+    }
+
+    #[test]
+    fn range_distance_int() {
+        assert_eq!(4, Range::new(10, 14).get_distance());
+    }
+
+    #[test]
+    fn range_distance_f64() {
+        assert_eq!(4.0, Range::new(10.0, 14.0).get_distance());
+    }
+
+    #[test]
+    fn range_project_plot_to_screen() {
+        let plot = Range::new(-100, 100);
+        let screen = Range::new(0, 400);
+
+        assert_eq!(Some(200.0), plot.project(0, &screen));
+        assert_eq!(Some(300.0), plot.project(50, &screen));
+        assert_eq!(Some(100.0), plot.project(-50, &screen));
+    }
+
+    #[test]
+    fn range_project_plot_to_screen_out_of_range() {
+        let plot = Range::new(-100, 100);
+        let screen = Range::new(0, 400);
+
+        assert_eq!(None, plot.project(-101, &screen));
+        assert_eq!(None, plot.project(100, &screen));
+    }
+
+    #[test]
+    fn range_project_screen_to_plot() {
+        let screen = Range::new(0, 400);
+        let plot = Range::new(-100, 100);
+
+        assert_eq!(Some(-100.0), screen.project(0, &plot));
+        assert_eq!(Some(-50.0), screen.project(100, &plot));
+        assert_eq!(Some(0.0), screen.project(200, &plot));
+        assert_eq!(Some(50.0), screen.project(300, &plot));
+        assert_eq!(Some(99.5), screen.project(399, &plot));
+    }
+
+    #[test]
+    fn range_project_screen_to_plot_out_of_range() {
+        let screen = Range::new(0, 400);
+        let plot = Range::new(-100, 100);
+
+        assert_eq!(None, screen.project(-1, &plot));
+        assert_eq!(None, screen.project(400, &plot));
     }
 
     #[test]
