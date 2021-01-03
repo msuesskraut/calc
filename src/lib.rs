@@ -8,7 +8,7 @@ pub use crate::ast::Number;
 use crate::ast::Statement;
 use crate::calc::{calc_operand, CalcError, TopLevelEnv};
 use crate::graph::GraphError;
-pub use crate::graph::{Plot, Range};
+pub use crate::graph::{Area, Plot, Range};
 use crate::parser::{parse, ParserError};
 use crate::solver::{solve_for, SolverError};
 
@@ -91,7 +91,7 @@ impl Calculator {
     ///   assert_eq!(Ok(Value::Void), c.execute("f(x) := x ^ 2"));
     ///
     ///   match c.execute("plot f") {
-    ///       Ok(Value::Plot(plot)) => assert_eq!(Some(100.0), c.calc(10.0, &plot)),
+    ///       Ok(Value::Plot(plot)) => assert_eq!(Some(12.5), plot.graph[30]),
     ///       // ...
     ///   #   _ => unimplemented!(),
     ///   }
@@ -112,12 +112,8 @@ impl Calculator {
                 self.env.put_fun(name, fun);
                 Ok(Value::Void)
             }
-            Statement::Plot { name } => Ok(Value::Plot(Plot::new(&name, &self.env)?)),
+            Statement::Plot { name } => Ok(Value::Plot(Plot::new(&name, &self.env, &Area::new(-100., -100., 100., 100.), &Area::new(0., 0., 60., 25.))?)),
         }
-    }
-
-    pub fn calc(&self, x: Number, plot: &Plot) -> Option<Number> {
-        plot.graph.calc(x, &self.env)
     }
 }
 
@@ -165,9 +161,9 @@ mod tests {
         let mut calc = Calculator::new();
         assert_eq!(Ok(Value::Void), calc.execute("f(x) := x ^ 2"));
         let plot = calc.execute("plot f").unwrap();
-        assert!(matches!(plot, Value::Plot(_)));
+        assert!(matches!(&plot, Value::Plot(_)));
         if let Value::Plot(plot) = plot {
-            assert_eq!(Some(100.0), calc.calc(10.0, &plot));
+            assert!(!plot.graph.is_empty());
         }
     }
 }

@@ -6,9 +6,8 @@ use crate::{
 
 use thiserror::Error;
 
-use std::cmp::{PartialEq, PartialOrd};
+use std::cmp::PartialEq;
 use std::fmt::Debug;
-use std::ops::Sub;
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum GraphError {
@@ -37,16 +36,16 @@ impl<'a> Env for ArgEnv<'a> {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Graph {
-    fun: Function,
+struct Graph<'a> {
+    fun: &'a Function,
 }
 
-impl Graph {
-    pub fn x_name(&self) -> &str {
+impl<'a> Graph<'a> {
+    fn x_name(&self) -> &str {
         &self.fun.args[0]
     }
 
-    pub fn calc(&self, x: Number, env: &dyn Env) -> Option<Number> {
+    fn calc(&self, x: Number, env: &dyn Env) -> Option<Number> {
         let call_env = ArgEnv {
             name: self.x_name(),
             value: x,
@@ -56,14 +55,14 @@ impl Graph {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Range<Number: Debug + PartialEq> {
+#[derive(Debug, PartialEq, Clone)]
+pub struct Range {
     pub min: Number,
     pub max: Number,
 }
 
-impl<Number: Debug + Copy + PartialEq + PartialOrd + Sub + Sub<Output = Number>> Range<Number> {
-    pub fn new(min: Number, max: Number) -> Range<Number> {
+impl Range {
+    pub fn new(min: Number, max: Number) -> Range {
         if min >= max {
             panic!(format!("min {:?} must be smaller than max {:?}", min, max));
         }
@@ -74,15 +73,11 @@ impl<Number: Debug + Copy + PartialEq + PartialOrd + Sub + Sub<Output = Number>>
         self.max - self.min
     }
 
-    pub fn project<OtherNumber>(&self, pixel: Number, to: &Range<OtherNumber>) -> Option<f64>
-    where
-        Number: Into<f64>,
-        OtherNumber:
-            Debug + Copy + PartialEq + PartialOrd + Sub + Sub<Output = OtherNumber> + Into<f64>,
+    pub fn project(&self, pixel: Number, to: &Range) -> Option<Number>
     {
         if (self.min..self.max).contains(&pixel) {
             Some(
-                to.min.into() + (((pixel - self.min).into()) / (self.get_distance().into()) * to.get_distance().into()),
+                to.min + (((pixel - self.min) / self.get_distance()) * to.get_distance()),
             )
         } else {
             None
@@ -90,24 +85,41 @@ impl<Number: Debug + Copy + PartialEq + PartialOrd + Sub + Sub<Output = Number>>
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct Area {
+    pub x: Range,
+    pub y: Range,
+}
+
+impl Area {
+    pub fn new(x_min: Number, y_min: Number, x_max: Number, y_max: Number) -> Area {
+        Area {
+            x: Range::new(x_min, x_max),
+            y: Range::new(y_min, y_max),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Plot {
-    pub x_range: Range<Number>,
-    pub y_range: Range<Number>,
-    pub graph: Graph,
+    pub graph: Vec<Option<Number>>,
 }
 
 impl Plot {
-    pub fn new(name: &str, env: &TopLevelEnv) -> Result<Plot, GraphError> {
-        let fun = env
+    pub fn new(name: &str, env: &TopLevelEnv, area: &Area, screen: &Area) -> Result<Plot, GraphError> {
+        let fun = Graph { fun: env
             .get_fun(name)
-            .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?;
-        let x_range = Range::new(-100., 100.);
-        let y_range = Range::new(-100., 100.);
+            .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?};
+        let graph = ((screen.x.min as i32)..(screen.x.max as i32)).map(|w| {
+            let x = screen.x.project(w as f64, &area.x).unwrap();
+            if let Some(Some(y)) = fun.calc(x, env).map(|y| area.y.project(y, &screen.y)) {
+                Some(y)
+            } else {
+                None
+            }
+        }).collect();
         Ok(Plot {
-            x_range,
-            y_range,
-            graph: Graph { fun: fun.clone() },
+            graph
         })
     }
 }
@@ -153,19 +165,14 @@ mod tests {
             body: Operand::Symbol("x".to_string()),
         };
         let env = TopLevelEnv::default();
-        let graph = Graph { fun };
+        let graph = Graph { fun: &fun };
         assert_eq!(Some(1.0), graph.calc(1.0, &env));
     }
 
     #[test]
-    #[should_panic(expected = "min 4 must be smaller than max 3")]
+    #[should_panic(expected = "min 4.0 must be smaller than max 3.0")]
     fn range_construct_failure() {
-        let _ = Range::new(4, 3);
-    }
-
-    #[test]
-    fn range_distance_int() {
-        assert_eq!(4, Range::new(10, 14).get_distance());
+        let _ = Range::new(4., 3.);
     }
 
     #[test]
@@ -175,42 +182,42 @@ mod tests {
 
     #[test]
     fn range_project_plot_to_screen() {
-        let plot = Range::new(-100, 100);
-        let screen = Range::new(0, 400);
+        let plot = Range::new(-100., 100.);
+        let screen = Range::new(0., 400.);
 
-        assert_eq!(Some(200.0), plot.project(0, &screen));
-        assert_eq!(Some(300.0), plot.project(50, &screen));
-        assert_eq!(Some(100.0), plot.project(-50, &screen));
+        assert_eq!(Some(200.0), plot.project(0., &screen));
+        assert_eq!(Some(300.0), plot.project(50., &screen));
+        assert_eq!(Some(100.0), plot.project(-50., &screen));
     }
 
     #[test]
     fn range_project_plot_to_screen_out_of_range() {
-        let plot = Range::new(-100, 100);
-        let screen = Range::new(0, 400);
+        let plot = Range::new(-100., 100.);
+        let screen = Range::new(0., 400.);
 
-        assert_eq!(None, plot.project(-101, &screen));
-        assert_eq!(None, plot.project(100, &screen));
+        assert_eq!(None, plot.project(-101., &screen));
+        assert_eq!(None, plot.project(100., &screen));
     }
 
     #[test]
     fn range_project_screen_to_plot() {
-        let screen = Range::new(0, 400);
-        let plot = Range::new(-100, 100);
+        let screen = Range::new(0., 400.);
+        let plot = Range::new(-100., 100.);
 
-        assert_eq!(Some(-100.0), screen.project(0, &plot));
-        assert_eq!(Some(-50.0), screen.project(100, &plot));
-        assert_eq!(Some(0.0), screen.project(200, &plot));
-        assert_eq!(Some(50.0), screen.project(300, &plot));
-        assert_eq!(Some(99.5), screen.project(399, &plot));
+        assert_eq!(Some(-100.0), screen.project(0., &plot));
+        assert_eq!(Some(-50.0), screen.project(100., &plot));
+        assert_eq!(Some(0.0), screen.project(200., &plot));
+        assert_eq!(Some(50.0), screen.project(300., &plot));
+        assert_eq!(Some(99.5), screen.project(399., &plot));
     }
 
     #[test]
     fn range_project_screen_to_plot_out_of_range() {
-        let screen = Range::new(0, 400);
-        let plot = Range::new(-100, 100);
+        let screen = Range::new(0., 400.);
+        let plot = Range::new(-100., 100.);
 
-        assert_eq!(None, screen.project(-1, &plot));
-        assert_eq!(None, screen.project(400, &plot));
+        assert_eq!(None, screen.project(-1., &plot));
+        assert_eq!(None, screen.project(400., &plot));
     }
 
     #[test]
@@ -219,7 +226,7 @@ mod tests {
         let term = {
             let lhs = Operand::Symbol("x".to_string());
             let rhs = Operand::Number(2.0);
-            let op = Operation::Pow;
+            let op = Operation::Mul;
             Term { lhs, rhs, op }
         };
         let body = Operand::Term(Box::new(term));
@@ -228,7 +235,12 @@ mod tests {
             body,
         };
         env.put_fun("f".to_string(), fun);
-        let plot = Plot::new("f", &env).unwrap();
-        assert_eq!(Some(4.0), plot.graph.calc(2.0, &env));
+        let area = Area::new(-100., -100., 100., 100.);
+        let screen = Area::new(0., 0., 40., 40.);
+        let plot = Plot::new("f", &env, &area, &screen).unwrap();
+        assert_eq!(40, plot.graph.len());
+        assert_eq!(None, plot.graph[0]);
+        assert_eq!(Some(18.0), plot.graph[19]);
+        assert_eq!(None, plot.graph[39]);
     }
 }
