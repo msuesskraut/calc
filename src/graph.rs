@@ -73,12 +73,9 @@ impl Range {
         self.max - self.min
     }
 
-    pub fn project(&self, pixel: Number, to: &Range) -> Option<Number>
-    {
+    pub fn project(&self, pixel: Number, to: &Range) -> Option<Number> {
         if (self.min..self.max).contains(&pixel) {
-            Some(
-                to.min + (((pixel - self.min) / self.get_distance()) * to.get_distance()),
-            )
+            Some(to.min + (((pixel - self.min) / self.get_distance()) * to.get_distance()))
         } else {
             None
         }
@@ -106,21 +103,28 @@ pub struct Plot {
 }
 
 impl Plot {
-    pub fn new(name: &str, env: &TopLevelEnv, area: &Area, screen: &Area) -> Result<Plot, GraphError> {
-        let fun = Graph { fun: env
-            .get_fun(name)
-            .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?};
-        let graph = ((screen.x.min as i32)..(screen.x.max as i32)).map(|w| {
-            let x = screen.x.project(w as f64, &area.x).unwrap();
-            if let Some(Some(y)) = fun.calc(x, env).map(|y| area.y.project(y, &screen.y)) {
-                Some(y)
-            } else {
-                None
-            }
-        }).collect();
-        Ok(Plot {
-            graph
-        })
+    pub fn new(
+        name: &str,
+        env: &TopLevelEnv,
+        area: &Area,
+        screen: &Area,
+    ) -> Result<Plot, GraphError> {
+        let fun = Graph {
+            fun: env
+                .get_fun(name)
+                .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?,
+        };
+        let graph = ((screen.x.min as i32)..(screen.x.max as i32))
+            .map(|w| {
+                let x = screen.x.project(w as f64, &area.x).unwrap();
+                if let Some(Some(y)) = fun.calc(x, env).map(|y| area.y.project(y, &screen.y)) {
+                    Some(y)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        Ok(Plot { graph })
     }
 }
 

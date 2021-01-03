@@ -112,7 +112,12 @@ impl Calculator {
                 self.env.put_fun(name, fun);
                 Ok(Value::Void)
             }
-            Statement::Plot { name } => Ok(Value::Plot(Plot::new(&name, &self.env, &Area::new(-100., -100., 100., 100.), &Area::new(0., 0., 60., 25.))?)),
+            Statement::Plot { name } => Ok(Value::Plot(Plot::new(
+                &name,
+                &self.env,
+                &Area::new(-100., -100., 100., 100.),
+                &Area::new(0., 0., 60., 25.),
+            )?)),
         }
     }
 }
