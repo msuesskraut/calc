@@ -51,7 +51,7 @@ impl Graph {
             fun: env
                 .get_fun(name)
                 .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?.clone(),
-            env: env,
+            env,
         };
 
         Ok(graph)
