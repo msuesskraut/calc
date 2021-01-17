@@ -115,10 +115,14 @@ impl Area {
     }
 }
 
+type Axis = Option<Number>;
+
 #[derive(Debug, PartialEq)]
 pub struct Plot {
     pub points: Vec<Option<Number>>,
     pub screen: Area,
+    pub x_axis: Axis,
+    pub y_axis: Axis,
 }
 
 impl Plot {
@@ -133,9 +137,14 @@ impl Plot {
                 }
             })
             .collect();
+        let x_axis = area.y.project(0., &screen.y);
+        let y_axis = area.x.project(0., &screen.x);
+
         Ok(Plot {
             points,
             screen: *screen,
+            x_axis,
+            y_axis,
         })
     }
 }
@@ -255,6 +264,9 @@ mod tests {
         let area = Area::new(-100., -100., 100., 100.);
         let screen = Area::new(0., 0., 40., 40.);
         let plot = graph.plot(&area, &screen).unwrap();
+
+        assert_eq!(Some(20.), plot.x_axis);
+        assert_eq!(Some(20.), plot.y_axis);
         assert_eq!(40, plot.points.len());
         assert_eq!(None, plot.points[0]);
         assert_eq!(Some(18.0), plot.points[19]);
