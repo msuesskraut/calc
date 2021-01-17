@@ -25,7 +25,7 @@ pub trait Env {
     fn get_fun(&self, fun: &str) -> Option<&Function>;
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct TopLevelEnv {
     vars: HashMap<String, Number>,
     funs: HashMap<String, Function>,

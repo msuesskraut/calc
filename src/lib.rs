@@ -8,7 +8,7 @@ pub use crate::ast::Number;
 use crate::ast::Statement;
 use crate::calc::{calc_operand, CalcError, TopLevelEnv};
 use crate::graph::GraphError;
-pub use crate::graph::{Area, Plot, Range};
+pub use crate::graph::{Area, Graph, Range};
 use crate::parser::{parse, ParserError};
 use crate::solver::{solve_for, SolverError};
 
@@ -36,7 +36,7 @@ pub enum Value {
     Void,
     Number(Number),
     Solved { variable: String, value: Number },
-    Plot(Plot),
+    Graph(Graph),
 }
 
 /// # Calculator
@@ -87,11 +87,17 @@ impl Calculator {
     /// - Create a plot:
     ///   ```
     ///   # use rust_expression::{Calculator, Value};
+    ///   # use rust_expression::Area;
     ///   # let mut c = Calculator::new();
     ///   assert_eq!(Ok(Value::Void), c.execute("f(x) := x ^ 2"));
     ///
     ///   match c.execute("plot f") {
-    ///       Ok(Value::Plot(plot)) => assert_eq!(Some(12.5), plot.graph[30]),
+    ///       Ok(Value::Graph(graph)) => {
+    ///           let area = Area::new(-100., -100., 100., 100.);
+    ///           let screen = Area::new(0., 0., 60., 40.);
+    ///           let plot = graph.plot(&area, &screen).unwrap();
+    ///           assert_eq!(Some(20.), plot.points[30]);
+    ///       }
     ///       // ...
     ///   #   _ => unimplemented!(),
     ///   }
@@ -112,11 +118,9 @@ impl Calculator {
                 self.env.put_fun(name, fun);
                 Ok(Value::Void)
             }
-            Statement::Plot { name } => Ok(Value::Plot(Plot::new(
+            Statement::Plot { name } => Ok(Value::Graph(Graph::new(
                 &name,
-                &self.env,
-                &Area::new(-100., -100., 100., 100.),
-                &Area::new(0., 0., 60., 25.),
+                &self.env
             )?)),
         }
     }
@@ -165,10 +169,11 @@ mod tests {
     fn simple_plot() {
         let mut calc = Calculator::new();
         assert_eq!(Ok(Value::Void), calc.execute("f(x) := x ^ 2"));
-        let plot = calc.execute("plot f").unwrap();
-        assert!(matches!(&plot, Value::Plot(_)));
-        if let Value::Plot(plot) = plot {
-            assert!(!plot.graph.is_empty());
+        let graph = calc.execute("plot f").unwrap();
+        assert!(matches!(&graph, Value::Graph(_)));
+        if let Value::Graph(graph) = graph {
+            let plot = graph.plot(&Area::new(-100., -100., 100., 100.), &Area::new(0., 0., 80., 30.)).unwrap();
+            assert!(!plot.points.is_empty());
         }
     }
 }

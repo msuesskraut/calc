@@ -36,26 +36,49 @@ impl<'a> Env for ArgEnv<'a> {
 }
 
 #[derive(Debug, PartialEq)]
-struct Graph<'a> {
-    fun: &'a Function,
+pub struct Graph {
+    env: TopLevelEnv,
+    fun: Function,
 }
 
-impl<'a> Graph<'a> {
+impl Graph {
+    pub fn new(
+        name: &str,
+        env: &TopLevelEnv,
+    ) -> Result<Graph, GraphError> {
+        let env = env.clone();
+        let graph = Graph {
+            fun: env
+                .get_fun(name)
+                .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?.clone(),
+            env: env,
+        };
+
+        Ok(graph)
+    }
+
     fn x_name(&self) -> &str {
         &self.fun.args[0]
     }
 
-    fn calc(&self, x: Number, env: &dyn Env) -> Option<Number> {
+    fn calc(&self, x: Number) -> Option<Number> {
         let call_env = ArgEnv {
             name: self.x_name(),
             value: x,
-            env,
+            env: &self.env,
         };
         calc_operand(&self.fun.body, &call_env).ok()
     }
+
+    pub fn plot(&self,
+        area: &Area,
+        screen: &Area,
+    ) -> Result<Plot, GraphError> {
+        Plot::new(self, area, screen)
+    }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Range {
     pub min: Number,
     pub max: Number,
@@ -82,7 +105,7 @@ impl Range {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Area {
     pub x: Range,
     pub y: Range,
@@ -99,32 +122,27 @@ impl Area {
 
 #[derive(Debug, PartialEq)]
 pub struct Plot {
-    pub graph: Vec<Option<Number>>,
+    pub points: Vec<Option<Number>>,
+    pub screen: Area,
 }
 
 impl Plot {
     pub fn new(
-        name: &str,
-        env: &TopLevelEnv,
+        graph: &Graph,
         area: &Area,
         screen: &Area,
     ) -> Result<Plot, GraphError> {
-        let fun = Graph {
-            fun: env
-                .get_fun(name)
-                .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?,
-        };
-        let graph = ((screen.x.min as i32)..(screen.x.max as i32))
+        let points = ((screen.x.min as i32)..(screen.x.max as i32))
             .map(|w| {
                 let x = screen.x.project(w as f64, &area.x).unwrap();
-                if let Some(Some(y)) = fun.calc(x, env).map(|y| area.y.project(y, &screen.y)) {
+                if let Some(Some(y)) = graph.calc(x).map(|y| area.y.project(y, &screen.y)) {
                     Some(y)
                 } else {
                     None
                 }
             })
             .collect();
-        Ok(Plot { graph })
+        Ok(Plot { points, screen: *screen })
     }
 }
 
@@ -169,8 +187,8 @@ mod tests {
             body: Operand::Symbol("x".to_string()),
         };
         let env = TopLevelEnv::default();
-        let graph = Graph { fun: &fun };
-        assert_eq!(Some(1.0), graph.calc(1.0, &env));
+        let graph = Graph { fun: fun, env };
+        assert_eq!(Some(1.0), graph.calc(1.0));
     }
 
     #[test]
@@ -239,12 +257,13 @@ mod tests {
             body,
         };
         env.put_fun("f".to_string(), fun);
+        let graph = Graph::new("f", &env).unwrap();
         let area = Area::new(-100., -100., 100., 100.);
         let screen = Area::new(0., 0., 40., 40.);
-        let plot = Plot::new("f", &env, &area, &screen).unwrap();
-        assert_eq!(40, plot.graph.len());
-        assert_eq!(None, plot.graph[0]);
-        assert_eq!(Some(18.0), plot.graph[19]);
-        assert_eq!(None, plot.graph[39]);
+        let plot = graph.plot(&area, &screen).unwrap();
+        assert_eq!(40, plot.points.len());
+        assert_eq!(None, plot.points[0]);
+        assert_eq!(Some(18.0), plot.points[19]);
+        assert_eq!(None, plot.points[39]);
     }
 }

@@ -1,29 +1,38 @@
-use rust_expression::{Calculator, Plot, Value};
+use rust_expression::{Area, Calculator, Graph, Value};
 
 use linefeed::{Interface, ReadResult};
 
 use std::io;
 use std::sync::Arc;
 
-fn draw(plot: &Plot) {
+fn draw(graph: &Graph) {
     const WIDTH: usize = 60;
     const HEIGHT: usize = 25;
 
-    let mut chart = vec![vec![' '; WIDTH]; HEIGHT];
+    let area = Area::new(-100., -100., 100., 100.);
+    let screen = Area::new(0., 0., WIDTH as f64, HEIGHT as f64);
+    let plot = graph.plot(&area, &screen);
 
-    for w in 0..WIDTH {
-        let h = plot.graph[w];
-        if let Some(h) = h {
-            chart[HEIGHT - (h as usize)][w] = '*';
-        }
-    }
+    match plot {
+        Ok(plot) => {
+            let mut chart = vec![vec![' '; WIDTH]; HEIGHT];
 
-    for line in chart {
-        let mut s = String::with_capacity(WIDTH as usize);
-        for ch in line {
-            s.push(ch);
+            for w in 0..WIDTH {
+                let h = plot.points[w];
+                if let Some(h) = h {
+                    chart[HEIGHT - (h as usize)][w] = '*';
+                }
+            }
+
+            for line in chart {
+                let mut s = String::with_capacity(WIDTH as usize);
+                for ch in line {
+                    s.push(ch);
+                }
+                println!("{}", s);
+            }
         }
-        println!("{}", s);
+        Err(err) => println!("{:?}", err)
     }
 }
 
@@ -51,7 +60,7 @@ fn main() -> io::Result<()> {
             Ok(Value::Number(num)) => println!("{:}", num),
             Ok(Value::Void) => (),
             Ok(Value::Solved { variable, value }) => println!("{:} = {:}", variable, value),
-            Ok(Value::Plot(plot)) => draw(&plot),
+            Ok(Value::Graph(graph)) => draw(&graph),
             Err(err) => println!("Error: {:}", err),
         }
     }
