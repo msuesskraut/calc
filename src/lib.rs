@@ -118,10 +118,7 @@ impl Calculator {
                 self.env.put_fun(name, fun);
                 Ok(Value::Void)
             }
-            Statement::Plot { name } => Ok(Value::Graph(Graph::new(
-                &name,
-                &self.env
-            )?)),
+            Statement::Plot { name } => Ok(Value::Graph(Graph::new(&name, &self.env)?)),
         }
     }
 }
@@ -172,7 +169,12 @@ mod tests {
         let graph = calc.execute("plot f").unwrap();
         assert!(matches!(&graph, Value::Graph(_)));
         if let Value::Graph(graph) = graph {
-            let plot = graph.plot(&Area::new(-100., -100., 100., 100.), &Area::new(0., 0., 80., 30.)).unwrap();
+            let plot = graph
+                .plot(
+                    &Area::new(-100., -100., 100., 100.),
+                    &Area::new(0., 0., 80., 30.),
+                )
+                .unwrap();
             assert!(!plot.points.is_empty());
         }
     }

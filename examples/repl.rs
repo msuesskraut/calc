@@ -32,7 +32,7 @@ fn draw(graph: &Graph) {
                 println!("{}", s);
             }
         }
-        Err(err) => println!("{:?}", err)
+        Err(err) => println!("{:?}", err),
     }
 }
 

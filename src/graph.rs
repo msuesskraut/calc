@@ -42,15 +42,13 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn new(
-        name: &str,
-        env: &TopLevelEnv,
-    ) -> Result<Graph, GraphError> {
+    pub fn new(name: &str, env: &TopLevelEnv) -> Result<Graph, GraphError> {
         let env = env.clone();
         let graph = Graph {
             fun: env
                 .get_fun(name)
-                .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?.clone(),
+                .ok_or_else(|| GraphError::UnknownFunction(name.to_string()))?
+                .clone(),
             env,
         };
 
@@ -70,10 +68,7 @@ impl Graph {
         calc_operand(&self.fun.body, &call_env).ok()
     }
 
-    pub fn plot(&self,
-        area: &Area,
-        screen: &Area,
-    ) -> Result<Plot, GraphError> {
+    pub fn plot(&self, area: &Area, screen: &Area) -> Result<Plot, GraphError> {
         Plot::new(self, area, screen)
     }
 }
@@ -127,11 +122,7 @@ pub struct Plot {
 }
 
 impl Plot {
-    pub fn new(
-        graph: &Graph,
-        area: &Area,
-        screen: &Area,
-    ) -> Result<Plot, GraphError> {
+    pub fn new(graph: &Graph, area: &Area, screen: &Area) -> Result<Plot, GraphError> {
         let points = ((screen.x.min as i32)..(screen.x.max as i32))
             .map(|w| {
                 let x = screen.x.project(w as f64, &area.x).unwrap();
@@ -142,7 +133,10 @@ impl Plot {
                 }
             })
             .collect();
-        Ok(Plot { points, screen: *screen })
+        Ok(Plot {
+            points,
+            screen: *screen,
+        })
     }
 }
 
