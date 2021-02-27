@@ -98,6 +98,11 @@ impl Range {
             None
         }
     }
+
+    pub fn move_by(&mut self, delta: Number) {
+        self.min += delta;
+        self.max += delta;
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -112,6 +117,11 @@ impl Area {
             x: Range::new(x_min, x_max),
             y: Range::new(y_min, y_max),
         }
+    }
+
+    pub fn move_by(&mut self, x_delta: Number, y_delta: Number) {
+        self.x.move_by(x_delta);
+        self.y.move_by(y_delta);
     }
 }
 
