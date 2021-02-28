@@ -56,19 +56,33 @@ impl Default for TopLevelEnv {
         let funs = {
             let mut funs = HashMap::new();
 
-            fn sin(x: Number) -> Number { x.sin() }
-            funs.insert("sin".to_string(), Function::BuildIn(BuildInFunction {
-                name: "sin".to_string(),
-                arg: "x".to_string(),
-                body: &sin,
-            }));
+            macro_rules! buildin {
+                ($id:ident) => { fn $id(x: Number) -> Number { x.$id() }
+                        funs.insert(stringify!($id).to_string(), Function::BuildIn(BuildInFunction {
+                            name: stringify!($id).to_string(),
+                            arg: "x".to_string(),
+                            body: &$id,
+                        }));}
+            }
 
-            fn cos(x: Number) -> Number { x.sin() }
-            funs.insert("cos".to_string(), Function::BuildIn(BuildInFunction {
-                name: "cos".to_string(),
-                arg: "x".to_string(),
-                body: &cos,
-            }));
+            buildin!(abs);
+            buildin!(sqrt);
+            buildin!(sin);
+            buildin!(sinh);
+            buildin!(cos);
+            buildin!(cosh);
+            buildin!(tan);
+            buildin!(tanh);
+            buildin!(exp);
+            buildin!(ln);
+            buildin!(log2);
+            buildin!(log10);
+            buildin!(atan);
+            buildin!(atanh);
+            buildin!(asin);
+            buildin!(asinh);
+            buildin!(acos);
+            buildin!(acosh);
 
             funs
         };
