@@ -352,11 +352,17 @@ mod tests {
             .collect();
 
         assert_eq!(exp.len(), act.len());
-        assert!(exp
-            .iter()
-            .zip(act.iter())
-            .all(|(exp, act)| approx_eq!(f64, exp.pos, act.pos, epsilon = 0.00001)
-                && approx_eq!(f64, exp.label, act.label, epsilon = 0.00001)));
+        assert!(exp.iter().zip(act.iter()).all(|(exp, act)| approx_eq!(
+            f64,
+            exp.pos,
+            act.pos,
+            epsilon = 0.00001
+        ) && approx_eq!(
+            f64,
+            exp.label,
+            act.label,
+            epsilon = 0.00001
+        )));
     }
 
     #[test]
@@ -372,11 +378,17 @@ mod tests {
 
         assert_eq!(exp.len(), act.len());
         println!("{:?}", act);
-        assert!(exp
-            .iter()
-            .zip(act.iter())
-            .all(|(exp, act)| approx_eq!(f64, exp.pos, act.pos, epsilon = 0.00001)
-                && approx_eq!(f64, exp.label, act.label, epsilon = 0.00001)));
+        assert!(exp.iter().zip(act.iter()).all(|(exp, act)| approx_eq!(
+            f64,
+            exp.pos,
+            act.pos,
+            epsilon = 0.00001
+        ) && approx_eq!(
+            f64,
+            exp.label,
+            act.label,
+            epsilon = 0.00001
+        )));
     }
 
     #[test]
@@ -392,10 +404,16 @@ mod tests {
 
         assert_eq!(exp.len(), act.len());
         println!("{:?}", act);
-        assert!(exp
-            .iter()
-            .zip(act.iter())
-            .all(|(exp, act)| approx_eq!(f64, exp.pos, act.pos, epsilon = 0.00001)
-                && approx_eq!(f64, exp.label, act.label, epsilon = 0.00001)));
+        assert!(exp.iter().zip(act.iter()).all(|(exp, act)| approx_eq!(
+            f64,
+            exp.pos,
+            act.pos,
+            epsilon = 0.00001
+        ) && approx_eq!(
+            f64,
+            exp.label,
+            act.label,
+            epsilon = 0.00001
+        )));
     }
 }
