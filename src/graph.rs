@@ -90,7 +90,7 @@ impl Range {
     }
 
     pub fn is_in_range(&self, pos: Number) -> bool {
-        return self.min <= pos && pos <= self.max;
+        self.min <= pos && pos <= self.max
     }
 
     pub fn get_distance(&self) -> Number {
@@ -150,17 +150,16 @@ impl Tic {
                 .take_while(|label| label > &area.min)
                 .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
                 .collect();
+
             let right: Vec<Tic> = range_step_from(step, step)
                 .take_while(|label| label < &area.max)
                 .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
                 .collect();
-            left.iter()
-                .rev()
-                .chain(right.iter())
-                .map(|tic| *tic)
-                .collect()
+
+            left.iter().rev().chain(right.iter()).copied().collect()
         } else {
             let start = (area.min / step).ceil() * step;
+
             range_step_from(start, step)
                 .take_while(|label| label < &area.max)
                 .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
