@@ -4,6 +4,8 @@ use crate::{
     calc::TopLevelEnv,
 };
 
+use num::iter::range_step_from;
+
 use thiserror::Error;
 
 use std::cmp::PartialEq;
@@ -87,6 +89,10 @@ impl Range {
         Range { min, max }
     }
 
+    pub fn is_in_range(&self, pos: Number) -> bool {
+        return self.min <= pos && pos <= self.max;
+    }
+
     pub fn get_distance(&self) -> Number {
         self.max - self.min
     }
@@ -125,14 +131,49 @@ impl Area {
     }
 }
 
-type Axis = Option<Number>;
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct Tic {
+    pos: Number,
+    label: Number,
+}
+
+impl Tic {
+    pub fn new(pos: Number, label: Number) -> Tic {
+        Tic { pos, label }
+    }
+
+    pub fn create_tics(screen: &Range, area: &Range) -> Vec<Tic> {
+        let width = area.max - area.min;
+        let tic_width = 10f64.powf((width.log10() - 1.0).round());
+        if area.is_in_range(0.0) {
+            let left: Vec<Tic> = range_step_from(0f64, -tic_width).take_while( |label| label > &area.min).map( |label| Tic::new(area.project(label, screen).unwrap(), label)).collect();
+            let right: Vec<Tic> = range_step_from(0f64, tic_width).take_while( |label| label < &area.max).map( |label| Tic::new(area.project(label, screen).unwrap(), label)).collect();
+            left.iter().rev().chain(right.iter()).map( |tic| *tic ).collect()
+        } else {
+            let start = (area.min / tic_width).ceil() * tic_width;
+            range_step_from(start, tic_width).take_while( |label| label < &area.max).map( |label| Tic::new(area.project(label, screen).unwrap(), label)).collect()
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Axis {
+    pos: Number,
+    tics: Vec<Tic>,
+}
+
+impl Axis {
+    pub fn new(pos: Option<Number>, screen: &Range, area: &Range) -> Option<Axis> {
+        pos.map(|pos| Axis { pos, tics: Tic::create_tics(screen, area) })
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Plot {
     pub points: Vec<Option<Number>>,
     pub screen: Area,
-    pub x_axis: Axis,
-    pub y_axis: Axis,
+    pub x_axis: Option<Axis>,
+    pub y_axis: Option<Axis>,
 }
 
 impl Plot {
@@ -147,8 +188,8 @@ impl Plot {
                 }
             })
             .collect();
-        let x_axis = area.y.project(0., &screen.y);
-        let y_axis = area.x.project(0., &screen.x);
+        let x_axis = Axis::new(area.y.project(0., &screen.y), &screen.y, &area.y);
+        let y_axis = Axis::new(area.x.project(0., &screen.x), &screen.x, &area.x);
 
         Ok(Plot {
             points,
@@ -275,8 +316,8 @@ mod tests {
         let screen = Area::new(0., 0., 40., 40.);
         let plot = graph.plot(&area, &screen).unwrap();
 
-        assert_eq!(Some(20.), plot.x_axis);
-        assert_eq!(Some(20.), plot.y_axis);
+        assert_eq!(20., plot.x_axis.unwrap().pos);
+        assert_eq!(20., plot.y_axis.unwrap().pos);
         assert_eq!(40, plot.points.len());
         assert_eq!(None, plot.points[0]);
         assert_eq!(Some(18.0), plot.points[19]);
