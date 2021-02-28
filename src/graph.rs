@@ -89,20 +89,24 @@ impl Range {
         Range { min, max }
     }
 
-    pub fn is_in_range(&self, pos: Number) -> bool {
-        self.min <= pos && pos <= self.max
+    pub fn contains(&self, pos: Number) -> bool {
+        (self.min..self.max).contains(&pos)
     }
 
     pub fn get_distance(&self) -> Number {
         self.max - self.min
     }
 
-    pub fn project(&self, pixel: Number, to: &Range) -> Option<Number> {
-        if (self.min..self.max).contains(&pixel) {
-            Some(to.min + (((pixel - self.min) / self.get_distance()) * to.get_distance()))
+    pub fn project_inclusive(&self, pixel: Number, to: &Range) -> Option<Number> {
+        if self.contains(pixel) {
+            Some(self.project(pixel, to))
         } else {
             None
         }
+    }
+
+    pub fn project(&self, pixel: Number, to: &Range) -> Number {
+        to.min + (((pixel - self.min) / self.get_distance()) * to.get_distance())
     }
 
     pub fn move_by(&mut self, delta: Number) {
@@ -145,15 +149,15 @@ impl Tic {
     pub fn create_tics(screen: &Range, area: &Range) -> Vec<Tic> {
         let width = area.max - area.min;
         let step = 10f64.powf((width.log10() - 1.0).round());
-        if area.is_in_range(0.0) {
+        if area.contains(0.0) {
             let left: Vec<Tic> = range_step_from(0f64, -step)
                 .take_while(|label| label > &area.min)
-                .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
+                .map(|label| Tic::new(area.project_inclusive(label, screen).unwrap(), label))
                 .collect();
 
             let right: Vec<Tic> = range_step_from(step, step)
                 .take_while(|label| label < &area.max)
-                .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
+                .map(|label| Tic::new(area.project_inclusive(label, screen).unwrap(), label))
                 .collect();
 
             left.iter().rev().chain(right.iter()).copied().collect()
@@ -162,7 +166,7 @@ impl Tic {
 
             range_step_from(start, step)
                 .take_while(|label| label < &area.max)
-                .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
+                .map(|label| Tic::new(area.project_inclusive(label, screen).unwrap(), label))
                 .collect()
         }
     }
@@ -195,16 +199,12 @@ impl Plot {
     pub fn new(graph: &Graph, area: &Area, screen: &Area) -> Result<Plot, GraphError> {
         let points = ((screen.x.min as i32)..(screen.x.max as i32))
             .map(|w| {
-                let x = screen.x.project(w as f64, &area.x).unwrap();
-                if let Some(Some(y)) = graph.calc(x).map(|y| area.y.project(y, &screen.y)) {
-                    Some(y)
-                } else {
-                    None
-                }
+                let x = screen.x.project_inclusive(w as f64, &area.x).unwrap();
+                graph.calc(x).map(|y| area.y.project(y, &screen.y))
             })
             .collect();
-        let x_axis = Axis::new(area.y.project(0., &screen.y), &screen.y, &area.y);
-        let y_axis = Axis::new(area.x.project(0., &screen.x), &screen.x, &area.x);
+        let x_axis = Axis::new(area.y.project_inclusive(0., &screen.y), &screen.x, &area.x);
+        let y_axis = Axis::new(area.x.project_inclusive(0., &screen.x), &screen.y, &area.y);
 
         Ok(Plot {
             points,
@@ -276,9 +276,9 @@ mod tests {
         let plot = Range::new(-100., 100.);
         let screen = Range::new(0., 400.);
 
-        assert_eq!(Some(200.0), plot.project(0., &screen));
-        assert_eq!(Some(300.0), plot.project(50., &screen));
-        assert_eq!(Some(100.0), plot.project(-50., &screen));
+        assert_eq!(Some(200.0), plot.project_inclusive(0., &screen));
+        assert_eq!(Some(300.0), plot.project_inclusive(50., &screen));
+        assert_eq!(Some(100.0), plot.project_inclusive(-50., &screen));
     }
 
     #[test]
@@ -286,8 +286,8 @@ mod tests {
         let plot = Range::new(-100., 100.);
         let screen = Range::new(0., 400.);
 
-        assert_eq!(None, plot.project(-101., &screen));
-        assert_eq!(None, plot.project(100., &screen));
+        assert_eq!(None, plot.project_inclusive(-101., &screen));
+        assert_eq!(None, plot.project_inclusive(100., &screen));
     }
 
     #[test]
@@ -295,11 +295,11 @@ mod tests {
         let screen = Range::new(0., 400.);
         let plot = Range::new(-100., 100.);
 
-        assert_eq!(Some(-100.0), screen.project(0., &plot));
-        assert_eq!(Some(-50.0), screen.project(100., &plot));
-        assert_eq!(Some(0.0), screen.project(200., &plot));
-        assert_eq!(Some(50.0), screen.project(300., &plot));
-        assert_eq!(Some(99.5), screen.project(399., &plot));
+        assert_eq!(Some(-100.0), screen.project_inclusive(0., &plot));
+        assert_eq!(Some(-50.0), screen.project_inclusive(100., &plot));
+        assert_eq!(Some(0.0), screen.project_inclusive(200., &plot));
+        assert_eq!(Some(50.0), screen.project_inclusive(300., &plot));
+        assert_eq!(Some(99.5), screen.project_inclusive(399., &plot));
     }
 
     #[test]
@@ -307,8 +307,8 @@ mod tests {
         let screen = Range::new(0., 400.);
         let plot = Range::new(-100., 100.);
 
-        assert_eq!(None, screen.project(-1., &plot));
-        assert_eq!(None, screen.project(400., &plot));
+        assert_eq!(None, screen.project_inclusive(-1., &plot));
+        assert_eq!(None, screen.project_inclusive(400., &plot));
     }
 
     #[test]
@@ -334,9 +334,9 @@ mod tests {
         assert_eq!(20., plot.x_axis.unwrap().pos);
         assert_eq!(20., plot.y_axis.unwrap().pos);
         assert_eq!(40, plot.points.len());
-        assert_eq!(None, plot.points[0]);
-        assert_eq!(Some(18.0), plot.points[19]);
-        assert_eq!(None, plot.points[39]);
+        assert_eq!(Some(-20.), plot.points[0]);
+        assert_eq!(Some(18.), plot.points[19]);
+        assert_eq!(Some(58.), plot.points[39]);
     }
 
     #[test]
