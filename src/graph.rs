@@ -133,8 +133,8 @@ impl Area {
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Tic {
-    pos: Number,
-    label: Number,
+    pub pos: Number,
+    pub label: Number,
 }
 
 impl Tic {
@@ -170,8 +170,8 @@ impl Tic {
 
 #[derive(Debug, PartialEq)]
 pub struct Axis {
-    pos: Number,
-    tics: Vec<Tic>,
+    pub pos: Number,
+    pub tics: Vec<Tic>,
 }
 
 impl Axis {
