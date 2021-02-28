@@ -146,12 +146,25 @@ impl Tic {
         let width = area.max - area.min;
         let tic_width = 10f64.powf((width.log10() - 1.0).round());
         if area.is_in_range(0.0) {
-            let left: Vec<Tic> = range_step_from(0f64, -tic_width).take_while( |label| label > &area.min).map( |label| Tic::new(area.project(label, screen).unwrap(), label)).collect();
-            let right: Vec<Tic> = range_step_from(0f64, tic_width).take_while( |label| label < &area.max).map( |label| Tic::new(area.project(label, screen).unwrap(), label)).collect();
-            left.iter().rev().chain(right.iter()).map( |tic| *tic ).collect()
+            let left: Vec<Tic> = range_step_from(0f64, -tic_width)
+                .take_while(|label| label > &area.min)
+                .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
+                .collect();
+            let right: Vec<Tic> = range_step_from(0f64, tic_width)
+                .take_while(|label| label < &area.max)
+                .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
+                .collect();
+            left.iter()
+                .rev()
+                .chain(right.iter())
+                .map(|tic| *tic)
+                .collect()
         } else {
             let start = (area.min / tic_width).ceil() * tic_width;
-            range_step_from(start, tic_width).take_while( |label| label < &area.max).map( |label| Tic::new(area.project(label, screen).unwrap(), label)).collect()
+            range_step_from(start, tic_width)
+                .take_while(|label| label < &area.max)
+                .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
+                .collect()
         }
     }
 }
@@ -164,7 +177,10 @@ pub struct Axis {
 
 impl Axis {
     pub fn new(pos: Option<Number>, screen: &Range, area: &Range) -> Option<Axis> {
-        pos.map(|pos| Axis { pos, tics: Tic::create_tics(screen, area) })
+        pos.map(|pos| Axis {
+            pos,
+            tics: Tic::create_tics(screen, area),
+        })
     }
 }
 
