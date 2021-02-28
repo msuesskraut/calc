@@ -9,6 +9,10 @@ See library at work as a webapp at: [https://msuesskraut.github.io/calc/index.ht
 
 See also a command line version of calculator with a in `examples/repl.rs`.
 
+## Releases
+
+For releases see [rust-expression on crates.io](https://crates.io/crates/rust-expression).
+
 ## License
 
 [MIT](LICENSE)
