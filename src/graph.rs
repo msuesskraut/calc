@@ -144,13 +144,13 @@ impl Tic {
 
     pub fn create_tics(screen: &Range, area: &Range) -> Vec<Tic> {
         let width = area.max - area.min;
-        let tic_width = 10f64.powf((width.log10() - 1.0).round());
+        let step = 10f64.powf((width.log10() - 1.0).round());
         if area.is_in_range(0.0) {
-            let left: Vec<Tic> = range_step_from(0f64, -tic_width)
+            let left: Vec<Tic> = range_step_from(0f64, -step)
                 .take_while(|label| label > &area.min)
                 .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
                 .collect();
-            let right: Vec<Tic> = range_step_from(0f64, tic_width)
+            let right: Vec<Tic> = range_step_from(step, step)
                 .take_while(|label| label < &area.max)
                 .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
                 .collect();
@@ -160,8 +160,8 @@ impl Tic {
                 .map(|tic| *tic)
                 .collect()
         } else {
-            let start = (area.min / tic_width).ceil() * tic_width;
-            range_step_from(start, tic_width)
+            let start = (area.min / step).ceil() * step;
+            range_step_from(start, step)
                 .take_while(|label| label < &area.max)
                 .map(|label| Tic::new(area.project(label, screen).unwrap(), label))
                 .collect()
@@ -338,5 +338,64 @@ mod tests {
         assert_eq!(None, plot.points[0]);
         assert_eq!(Some(18.0), plot.points[19]);
         assert_eq!(None, plot.points[39]);
+    }
+
+    #[test]
+    fn create_tics_with_zero() {
+        use float_cmp::approx_eq;
+
+        let act = Tic::create_tics(&Range::new(-100., 100.), &Range::new(-5., 15.));
+        let exp: Vec<Tic> = range_step_from(-90., 10.)
+            .zip(range_step_from(-4., 1.))
+            .take(19)
+            .map(|(pos, label)| Tic::new(pos, label))
+            .collect();
+
+        assert_eq!(exp.len(), act.len());
+        assert!(exp
+            .iter()
+            .zip(act.iter())
+            .all(|(exp, act)| approx_eq!(f64, exp.pos, act.pos, epsilon = 0.00001)
+                && approx_eq!(f64, exp.label, act.label, epsilon = 0.00001)));
+    }
+
+    #[test]
+    fn create_tics_above_zero() {
+        use float_cmp::approx_eq;
+
+        let act = Tic::create_tics(&Range::new(0., 400.), &Range::new(3., 19.));
+        let exp: Vec<Tic> = range_step_from(0., 25.)
+            .zip(range_step_from(3., 1.))
+            .take(16)
+            .map(|(pos, label)| Tic::new(pos, label))
+            .collect();
+
+        assert_eq!(exp.len(), act.len());
+        println!("{:?}", act);
+        assert!(exp
+            .iter()
+            .zip(act.iter())
+            .all(|(exp, act)| approx_eq!(f64, exp.pos, act.pos, epsilon = 0.00001)
+                && approx_eq!(f64, exp.label, act.label, epsilon = 0.00001)));
+    }
+
+    #[test]
+    fn create_tics_below_zero() {
+        use float_cmp::approx_eq;
+
+        let act = Tic::create_tics(&Range::new(0., 400.), &Range::new(-19., -3.));
+        let exp: Vec<Tic> = range_step_from(0., 25.)
+            .zip(range_step_from(-19., 1.))
+            .take(16)
+            .map(|(pos, label)| Tic::new(pos, label))
+            .collect();
+
+        assert_eq!(exp.len(), act.len());
+        println!("{:?}", act);
+        assert!(exp
+            .iter()
+            .zip(act.iter())
+            .all(|(exp, act)| approx_eq!(f64, exp.pos, act.pos, epsilon = 0.00001)
+                && approx_eq!(f64, exp.label, act.label, epsilon = 0.00001)));
     }
 }
