@@ -38,17 +38,45 @@ pub struct Term {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Function {
+pub struct CustomFunction {
     pub args: Vec<String>,
     pub body: Operand,
 }
 
+#[derive(Clone)]
+pub struct BuildInFunction {
+    pub name: String,
+    pub arg: String,
+    pub body: &'static dyn Fn(Number) -> Number
+}
+
+impl PartialEq for BuildInFunction {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name && self.arg == other.arg
+    }
+}
+
+impl std::fmt::Debug for BuildInFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BuildInFunction")
+         .field("name", &self.name)
+         .field("arg", &self.arg)
+         .finish()
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Function {
+    Custom(CustomFunction),
+    BuildIn(BuildInFunction),
+}
+
 impl Default for Function {
     fn default() -> Self {
-        Function {
+        Function::Custom(CustomFunction {
             args: Vec::new(),
             body: Operand::Number(1.0),
-        }
+        })
     }
 }
 

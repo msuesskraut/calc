@@ -196,7 +196,7 @@ fn parse_function(function: Pairs<Rule>) -> Result<Statement, ParserError> {
             let body = parse_operand(p.into_inner())?;
             return Ok(Statement::Function {
                 name,
-                fun: Function { args, body },
+                fun: Function::Custom(CustomFunction { args, body }),
             });
         }
     }
@@ -340,10 +340,10 @@ mod tests {
 
     #[test]
     fn parse_fun_no_args() {
-        let fun = Function {
+        let fun = Function::Custom(CustomFunction {
             args: Vec::new(),
             body: Operand::Number(12.0),
-        };
+        });
         let statement = Statement::Function {
             name: "ghs".to_string(),
             fun,
@@ -353,7 +353,7 @@ mod tests {
 
     #[test]
     fn parse_fun_x() {
-        let fun = Function {
+        let fun = Function::Custom(CustomFunction {
             args: vec!["x".to_string()],
             body: {
                 let lhs = Operand::Number(1.0);
@@ -361,7 +361,7 @@ mod tests {
                 let op = Operation::Add;
                 Operand::Term(Box::new(Term { lhs, rhs, op }))
             },
-        };
+        });
         let statement = Statement::Function {
             name: "f".to_string(),
             fun,

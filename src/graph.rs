@@ -1,7 +1,6 @@
-use crate::calc::{calc_operand, Env};
 use crate::{
     ast::{Function, Number},
-    calc::TopLevelEnv,
+    calc::{TopLevelEnv, calc_operand, Env},
 };
 
 use num::iter::range_step_from;
@@ -58,16 +57,24 @@ impl Graph {
     }
 
     fn x_name(&self) -> &str {
-        &self.fun.args[0]
+        match self.fun {
+            Function::Custom(ref fun) => &fun.args[0],
+            Function::BuildIn(ref fun) => &fun.arg,
+        }
     }
 
     fn calc(&self, x: Number) -> Option<Number> {
-        let call_env = ArgEnv {
-            name: self.x_name(),
-            value: x,
-            env: &self.env,
-        };
-        calc_operand(&self.fun.body, &call_env).ok()
+        match self.fun {
+            Function::Custom(ref fun) => {
+                let call_env = ArgEnv {
+                    name: self.x_name(),
+                    value: x,
+                    env: &self.env,
+                };
+                calc_operand(&fun.body, &call_env).ok()
+            },
+            Function::BuildIn(ref fun) => Some((fun.body)(x))
+        }
     }
 
     pub fn plot(&self, area: &Area, screen: &Area) -> Result<Plot, GraphError> {
@@ -218,7 +225,7 @@ impl Plot {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::{Operand, Operation, Term};
+    use crate::ast::{CustomFunction, Operand, Operation, Term};
     use crate::calc::TopLevelEnv;
 
     #[test]
@@ -251,10 +258,10 @@ mod tests {
 
     #[test]
     fn function_call() {
-        let fun = Function {
+        let fun = Function::Custom(CustomFunction {
             args: vec!["x".to_string()],
             body: Operand::Symbol("x".to_string()),
-        };
+        });
         let env = TopLevelEnv::default();
         let graph = Graph { fun: fun, env };
         assert_eq!(Some(1.0), graph.calc(1.0));
@@ -321,10 +328,10 @@ mod tests {
             Term { lhs, rhs, op }
         };
         let body = Operand::Term(Box::new(term));
-        let fun = Function {
+        let fun = Function::Custom(CustomFunction {
             args: vec!["x".to_string()],
             body,
-        };
+        });
         env.put_fun("f".to_string(), fun);
         let graph = Graph::new("f", &env).unwrap();
         let area = Area::new(-100., -100., 100., 100.);

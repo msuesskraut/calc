@@ -25,7 +25,7 @@ pub trait Env {
     fn get_fun(&self, fun: &str) -> Option<&Function>;
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TopLevelEnv {
     vars: HashMap<String, Number>,
     funs: HashMap<String, Function>,
@@ -48,6 +48,35 @@ impl Env for TopLevelEnv {
 
     fn get_fun(&self, fun: &str) -> Option<&Function> {
         self.funs.get(fun)
+    }
+}
+
+impl Default for TopLevelEnv {
+    fn default() -> Self {
+        let funs = {
+            let mut funs = HashMap::new();
+
+            fn sin(x: Number) -> Number { x.sin() }
+            funs.insert("sin".to_string(), Function::BuildIn(BuildInFunction {
+                name: "sin".to_string(),
+                arg: "x".to_string(),
+                body: &sin,
+            }));
+
+            fn cos(x: Number) -> Number { x.sin() }
+            funs.insert("cos".to_string(), Function::BuildIn(BuildInFunction {
+                name: "cos".to_string(),
+                arg: "x".to_string(),
+                body: &cos,
+            }));
+
+            funs
+        };
+
+        Self {
+            vars: HashMap::new(),
+            funs,
+        }
     }
 }
 
@@ -80,10 +109,7 @@ pub fn calc_term(term: &Term, env: &dyn Env) -> Result<Number, CalcError> {
     })
 }
 
-pub fn calc_function_call(fun_call: &FunCall, env: &dyn Env) -> Result<Number, CalcError> {
-    let function = env
-        .get_fun(&fun_call.name)
-        .ok_or_else(|| CalcError::UnknownFunction(fun_call.name.to_string()))?;
+fn calc_custom_function_call(function: &CustomFunction, fun_call: &FunCall, env: &dyn Env)  -> Result<Number, CalcError> {
     if fun_call.params.len() != function.args.len() {
         return Err(CalcError::UnexpectedNumberOfParameters {
             name: fun_call.name.clone(),
@@ -104,7 +130,6 @@ pub fn calc_function_call(fun_call: &FunCall, env: &dyn Env) -> Result<Number, C
         .zip(params.iter())
         .map(|(arg, num)| (arg.as_str(), num))
         .collect();
-    //let env: HashMap<String, Number> = function.args.iter().zip(params.iter()).cloned().collect();
     calc_operand(
         &function.body,
         &ScopedEnv {
@@ -112,6 +137,26 @@ pub fn calc_function_call(fun_call: &FunCall, env: &dyn Env) -> Result<Number, C
             env: fun_env,
         },
     )
+}
+
+pub fn calc_function_call(fun_call: &FunCall, env: &dyn Env) -> Result<Number, CalcError> {
+    let function = env
+        .get_fun(&fun_call.name)
+        .ok_or_else(|| CalcError::UnknownFunction(fun_call.name.to_string()))?;
+    match function {
+        Function::Custom(function) => calc_custom_function_call(function, fun_call, env),
+        Function::BuildIn(function) => {
+            if fun_call.params.len() != 1 {
+                return Err(CalcError::UnexpectedNumberOfParameters {
+                    name: fun_call.name.clone(),
+                    act: fun_call.params.len(),
+                    exp: 1,
+                });
+            }
+            let x = calc_operand(&fun_call.params[0], env)?;
+            Ok((function.body)(x))
+        }
+    }
 }
 
 pub fn calc_operand(op: &Operand, env: &dyn Env) -> Result<Number, CalcError> {
@@ -249,10 +294,10 @@ mod tests {
         let lhs = Operand::Symbol("x".to_string());
         let rhs = Operand::Symbol("y".to_string());
         let op = Operation::Add;
-        let function = Function {
+        let function = Function::Custom(CustomFunction {
             args: vec!["x".to_string(), "y".to_string()],
             body: Operand::Term(Box::new(Term { lhs, rhs, op })),
-        };
+        });
         let mut funs = HashMap::new();
         funs.insert("fun".to_string(), function);
         let env = TopLevelEnv {
@@ -264,5 +309,35 @@ mod tests {
             params: vec![Operand::Number(4.0), Operand::Number(3.0)],
         });
         assert_eq!(Ok(7.0), calc_operand(&expr, &env));
+    }
+
+    #[test]
+    fn calc_buildinfunction_call() {
+        fn my_cos(x: Number) -> Number {
+            x.cos()
+        }
+        let function = Function::BuildIn(BuildInFunction {
+            name: "cos".to_string(),
+            arg: "x".to_string(),
+            body: &my_cos,
+        });
+        let mut funs = HashMap::new();
+        funs.insert("cos".to_string(), function);
+        let env = TopLevelEnv {
+            vars: HashMap::new(),
+            funs,
+        };
+        let expr = Operand::FunCall(FunCall {
+            name: "cos".to_string(),
+            params: vec![Operand::Number(0.)],
+        });
+        assert_eq!(Ok(1.0), calc_operand(&expr, &env));
+    }
+
+    #[test]
+    fn top_level_env_build_ins() {
+        let env = TopLevelEnv::default();
+        assert!(env.get_fun("sin").is_some());
+        assert!(env.get_fun("cos").is_some());
     }
 }

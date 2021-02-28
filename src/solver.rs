@@ -163,6 +163,7 @@ mod tests {
     }
     use self::helpers::parse_expression;
     use super::*;
+    use crate::ast::CustomFunction;
     use crate::calc::TopLevelEnv;
     use crate::parse;
 
@@ -322,14 +323,14 @@ mod tests {
         let mut env = TopLevelEnv::default();
         env.put_fun(
             "add".to_string(),
-            Function {
+            Function::Custom(CustomFunction {
                 args: vec!["x".to_string(), "y".to_string()],
                 body: Operand::Term(Box::new(Term {
                     lhs: Operand::Symbol("x".to_string()),
                     rhs: Operand::Symbol("y".to_string()),
                     op: Operation::Add,
                 })),
-            },
+            }),
         );
         assert!(if let Statement::SolveFor { lhs, rhs, sym } =
             parse("solve 2 * x + add(5, 12) = 22 - 6 * x + 7 for x").unwrap()
