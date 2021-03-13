@@ -1,6 +1,6 @@
 use crate::{
     ast::{Function, Number},
-    calc::{TopLevelEnv, calc_operand, Env},
+    calc::{calc_operand, Env, TopLevelEnv},
 };
 
 use num::iter::range_step_from;
@@ -72,8 +72,8 @@ impl Graph {
                     env: &self.env,
                 };
                 calc_operand(&fun.body, &call_env).ok()
-            },
-            Function::BuildIn(ref fun) => Some((fun.body)(x))
+            }
+            Function::BuildIn(ref fun) => Some((fun.body)(x)),
         }
     }
 

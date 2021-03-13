@@ -47,7 +47,7 @@ pub struct CustomFunction {
 pub struct BuildInFunction {
     pub name: String,
     pub arg: String,
-    pub body: &'static dyn Fn(Number) -> Number
+    pub body: &'static dyn Fn(Number) -> Number,
 }
 
 impl PartialEq for BuildInFunction {
@@ -59,9 +59,9 @@ impl PartialEq for BuildInFunction {
 impl std::fmt::Debug for BuildInFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BuildInFunction")
-         .field("name", &self.name)
-         .field("arg", &self.arg)
-         .finish()
+            .field("name", &self.name)
+            .field("arg", &self.arg)
+            .finish()
     }
 }
 
