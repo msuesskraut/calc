@@ -57,32 +57,19 @@ impl Default for TopLevelEnv {
             let mut funs = HashMap::new();
 
             macro_rules! buildin {
-                ($id:ident) => { fn $id(x: Number) -> Number { x.$id() }
+                ($($id:ident) +) => {
+                    $(
+                        fn $id(x: Number) -> Number { x.$id() }
                         funs.insert(stringify!($id).to_string(), Function::BuildIn(BuildInFunction {
                             name: stringify!($id).to_string(),
                             arg: "x".to_string(),
                             body: &$id,
-                        }));}
+                        }));
+                    )+
+                }
             }
 
-            buildin!(abs);
-            buildin!(sqrt);
-            buildin!(sin);
-            buildin!(sinh);
-            buildin!(cos);
-            buildin!(cosh);
-            buildin!(tan);
-            buildin!(tanh);
-            buildin!(exp);
-            buildin!(ln);
-            buildin!(log2);
-            buildin!(log10);
-            buildin!(atan);
-            buildin!(atanh);
-            buildin!(asin);
-            buildin!(asinh);
-            buildin!(acos);
-            buildin!(acosh);
+            buildin!(abs sqrt sin sinh cos cosh tan tanh exp ln log2 log10 atan atanh asin asinh acos acosh);
 
             funs
         };
@@ -123,7 +110,11 @@ pub fn calc_term(term: &Term, env: &dyn Env) -> Result<Number, CalcError> {
     })
 }
 
-fn calc_custom_function_call(function: &CustomFunction, fun_call: &FunCall, env: &dyn Env)  -> Result<Number, CalcError> {
+fn calc_custom_function_call(
+    function: &CustomFunction,
+    fun_call: &FunCall,
+    env: &dyn Env,
+) -> Result<Number, CalcError> {
     if fun_call.params.len() != function.args.len() {
         return Err(CalcError::UnexpectedNumberOfParameters {
             name: fun_call.name.clone(),
