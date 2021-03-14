@@ -107,7 +107,7 @@ impl Calculator {
         match st {
             Statement::Expression { op } => Ok(Value::Number(calc_operand(&op, &self.env)?)),
             Statement::Assignment { sym, op } => {
-                self.env.put(sym, calc_operand(&op, &self.env)?);
+                self.env.put(sym, calc_operand(&op, &self.env)?)?;
                 Ok(Value::Void)
             }
             Statement::SolveFor { lhs, rhs, sym } => Ok(Value::Solved {
