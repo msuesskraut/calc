@@ -113,12 +113,19 @@ impl Default for TopLevelEnv {
             macro_rules! buildin {
                 ($($id:ident) +) => {
                     $(
-                        vars.insert(stringify!($id).to_string().to_lowercase(), EnvVariable::new_const(std::f64::consts::$id));
+                        vars.insert(
+                            stringify!($id).to_string().to_lowercase(),
+                            EnvVariable::new_const(std::f64::consts::$id));
                     )+
                 }
             }
 
-            buildin!(E FRAC_1_PI FRAC_1_SQRT_2 FRAC_2_PI FRAC_2_SQRT_PI FRAC_PI_2 FRAC_PI_3 FRAC_PI_4 FRAC_PI_6 FRAC_PI_8 LN_2 LN_10 LOG2_10 LOG2_E LOG10_2 LOG10_E PI SQRT_2 TAU);
+            buildin!(
+                E
+                FRAC_1_PI FRAC_1_SQRT_2 FRAC_2_PI FRAC_2_SQRT_PI FRAC_PI_2
+                FRAC_PI_3 FRAC_PI_4 FRAC_PI_6 FRAC_PI_8
+                LN_2 LN_10 LOG2_10 LOG2_E LOG10_2 LOG10_E
+                PI SQRT_2 TAU);
 
             vars
         };
