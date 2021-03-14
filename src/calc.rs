@@ -17,6 +17,8 @@ pub enum CalcError {
     },
     #[error("Unknown function `{0}`")]
     UnknownFunction(String),
+    #[error("Cannot change value of constant `{0}`")]
+    CannotChangeConstant(String),
 }
 
 pub trait Env {
@@ -26,14 +28,43 @@ pub trait Env {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+struct EnvVariable {
+    value: Number,
+    is_const: bool,
+}
+
+impl EnvVariable {
+    fn new_const(value: Number) -> EnvVariable {
+        EnvVariable {
+            value, is_const: true,
+        }
+    }
+
+    fn new(value: Number) -> EnvVariable {
+        EnvVariable {
+            value, is_const: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct TopLevelEnv {
-    vars: HashMap<String, Number>,
+    vars: HashMap<String, EnvVariable>,
     funs: HashMap<String, Function>,
 }
 
 impl TopLevelEnv {
-    pub fn put(&mut self, sym: String, num: Number) {
-        self.vars.insert(sym, num);
+    pub fn put(&mut self, sym: String, num: Number) -> Result<(), CalcError> {
+        if let Some(var) = self.vars.get_mut(&sym) {
+            if var.is_const {
+                return Err(CalcError::CannotChangeConstant(sym));
+            } else {
+                var.value = num;
+            }
+        } else {
+            self.vars.insert(sym, EnvVariable::new(num));
+        }
+        Ok(())
     }
 
     pub fn put_fun(&mut self, name: String, fun: Function) {
@@ -43,7 +74,7 @@ impl TopLevelEnv {
 
 impl Env for TopLevelEnv {
     fn get(&self, sym: &str) -> Option<&Number> {
-        self.vars.get(sym)
+        self.vars.get(sym).map(|var| &var.value)
     }
 
     fn get_fun(&self, fun: &str) -> Option<&Function> {
@@ -74,8 +105,24 @@ impl Default for TopLevelEnv {
             funs
         };
 
+        let vars = {
+            let mut vars = HashMap::new();
+
+            macro_rules! buildin {
+                ($($id:ident) +) => {
+                    $(
+                        vars.insert(stringify!($id).to_string().to_lowercase(), EnvVariable::new_const(std::f64::consts::$id));
+                    )+
+                }
+            }
+
+            buildin!(E FRAC_1_PI FRAC_1_SQRT_2 FRAC_2_PI FRAC_2_SQRT_PI FRAC_PI_2 FRAC_PI_3 FRAC_PI_4 FRAC_PI_6 FRAC_PI_8 LN_2 LN_10 LOG2_10 LOG2_E LOG10_2 LOG10_E PI SQRT_2 TAU);
+
+            vars
+        };
+
         Self {
-            vars: HashMap::new(),
+            vars,
             funs,
         }
     }
@@ -191,7 +238,7 @@ mod tests {
     #[test]
     fn read_env_var() {
         let mut env = TopLevelEnv::default();
-        env.put("x".to_string(), 12.0);
+        env.put("x".to_string(), 12.0).unwrap();
 
         assert_eq!(Some(&12.0), env.get("x"));
     }
@@ -215,11 +262,17 @@ mod tests {
     #[test]
     fn calc_sym_known() {
         let mut env = TopLevelEnv::default();
-        env.put("x".to_string(), 12.0);
+        env.put("x".to_string(), 12.0).unwrap();
         assert_eq!(
             Ok(12.0),
             calc_operand(&Operand::Symbol("x".to_string()), &env)
         );
+    }
+
+    #[test]
+    fn calc_sym_constant() {
+        let mut env = TopLevelEnv::default();
+        assert!(matches!(env.put("e".to_string(), 2.0), Err(CalcError::CannotChangeConstant(sym)) if sym == "e"));
     }
 
     #[test]

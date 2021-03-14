@@ -194,7 +194,7 @@ mod tests {
     #[test]
     fn normalize_operand_symbol_y() {
         let mut env = TopLevelEnv::default();
-        env.put("y".to_string(), 12.0);
+        env.put("y".to_string(), 12.0).unwrap();
         let act = normalize(&parse_expression("y"), "x", &env);
         assert_eq!(Ok(NormForm { a1: 0.0, a0: 12.0 }), act);
     }

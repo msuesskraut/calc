@@ -231,7 +231,7 @@ mod tests {
     #[test]
     fn function_arg_x() {
         let mut env = TopLevelEnv::default();
-        env.put("x".to_string(), -19.0);
+        env.put("x".to_string(), -19.0).unwrap();
         let name = "x";
         let value = 42.0;
         let env = ArgEnv {
@@ -245,7 +245,7 @@ mod tests {
     #[test]
     fn function_arg_y() {
         let mut env = TopLevelEnv::default();
-        env.put("y".to_string(), -19.0);
+        env.put("y".to_string(), -19.0).unwrap();
         let name = "x";
         let value = 42.0;
         let env = ArgEnv {
