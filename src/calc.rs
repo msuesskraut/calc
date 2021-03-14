@@ -36,13 +36,15 @@ struct EnvVariable {
 impl EnvVariable {
     fn new_const(value: Number) -> EnvVariable {
         EnvVariable {
-            value, is_const: true,
+            value,
+            is_const: true,
         }
     }
 
     fn new(value: Number) -> EnvVariable {
         EnvVariable {
-            value, is_const: false,
+            value,
+            is_const: false,
         }
     }
 }
@@ -121,10 +123,7 @@ impl Default for TopLevelEnv {
             vars
         };
 
-        Self {
-            vars,
-            funs,
-        }
+        Self { vars, funs }
     }
 }
 
@@ -272,7 +271,9 @@ mod tests {
     #[test]
     fn calc_sym_constant() {
         let mut env = TopLevelEnv::default();
-        assert!(matches!(env.put("e".to_string(), 2.0), Err(CalcError::CannotChangeConstant(sym)) if sym == "e"));
+        assert!(
+            matches!(env.put("e".to_string(), 2.0), Err(CalcError::CannotChangeConstant(sym)) if sym == "e")
+        );
     }
 
     #[test]
