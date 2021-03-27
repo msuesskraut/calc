@@ -1,3 +1,5 @@
+#![allow(clippy::upper_case_acronyms)]
+
 use crate::ast::*;
 
 use lazy_static::lazy_static;
@@ -51,7 +53,6 @@ pub enum ParserError {
     PlotUnexpectedSymbol(String),
 }
 
-#[allow(clippy::upper_case_acronyms)]
 #[derive(Parser)]
 #[grammar = "equation.pest"]
 pub struct EquationParser;
