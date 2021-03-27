@@ -91,7 +91,7 @@ pub struct Range {
 impl Range {
     pub fn new(min: Number, max: Number) -> Range {
         if min >= max {
-            panic!(format!("min {:?} must be smaller than max {:?}", min, max));
+            panic!("min {:?} must be smaller than max {:?}", min, max);
         }
         Range { min, max }
     }
