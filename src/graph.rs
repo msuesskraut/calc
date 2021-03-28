@@ -120,6 +120,14 @@ impl Range {
         self.min += delta;
         self.max += delta;
     }
+
+    pub fn zoom_by(&mut self, factor: Number) {
+        let distance = self.get_distance();
+        let new_distance = distance * factor;
+        let diff = (new_distance - distance) / 2.;
+        self.min -= diff;
+        self.max += diff;
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -139,6 +147,11 @@ impl Area {
     pub fn move_by(&mut self, x_delta: Number, y_delta: Number) {
         self.x.move_by(x_delta);
         self.y.move_by(y_delta);
+    }
+
+    pub fn zoom_by(&mut self, factor: Number) {
+        self.x.zoom_by(factor);
+        self.y.zoom_by(factor);
     }
 }
 
@@ -227,6 +240,7 @@ mod tests {
     use super::*;
     use crate::ast::{CustomFunction, Operand, Operation, Term};
     use crate::calc::TopLevelEnv;
+    use assert_approx_eq::assert_approx_eq;
 
     #[test]
     fn function_arg_x() {
@@ -344,6 +358,48 @@ mod tests {
         assert_eq!(Some(-20.), plot.points[0]);
         assert_eq!(Some(18.), plot.points[19]);
         assert_eq!(Some(58.), plot.points[39]);
+    }
+
+    #[test]
+    fn range_move_by_positive() {
+        let mut r = Range::new(0., 10.);
+        r.move_by(2.);
+        assert_approx_eq!(2., r.min);
+        assert_approx_eq!(12., r.max);
+    }
+
+    #[test]
+    fn range_move_by_negative() {
+        let mut r = Range::new(2., 12.);
+        r.move_by(-5.);
+        assert_approx_eq!(-3., r.min);
+        assert_approx_eq!(7., r.max);
+    }
+
+    #[test]
+    fn area_move_by() {
+        let mut a = Area::new(0., 0., 10., 10.);
+        a.move_by(2., -3.);
+        assert_approx_eq!(2., a.x.min);
+        assert_approx_eq!(12., a.x.max);
+        assert_approx_eq!(-3., a.y.min);
+        assert_approx_eq!(7., a.y.max);
+    }
+
+    #[test]
+    fn range_zoom_by_out() {
+        let mut r = Range::new(2., 12.);
+        r.zoom_by(1.2);
+        assert_approx_eq!(1., r.min);
+        assert_approx_eq!(13., r.max);
+    }
+
+    #[test]
+    fn range_zoom_by_in() {
+        let mut r = Range::new(2., 12.);
+        r.zoom_by(0.8);
+        assert_approx_eq!(3., r.min);
+        assert_approx_eq!(11., r.max);
     }
 
     #[test]
