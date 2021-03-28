@@ -8,7 +8,7 @@ edition = "2018"
 description = "Calculator and solver for linear equations."
 repository = "https://github.com/msuesskraut/calc"
 readme = "README.md"
-keywords = ["calc", "math", "solver"]
+keywords = ["calc", "math", "solver", "graph"]
 categories = ["mathematics"]
 
 [dependencies]
