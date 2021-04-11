@@ -179,3 +179,5 @@ mod tests {
         }
     }
 }
+
+pub const HELP_SUMMARY : &'static str = include_str!("../doc/summary.md");
