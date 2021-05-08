@@ -180,4 +180,4 @@ mod tests {
     }
 }
 
-pub const HELP_SUMMARY : &'static str = include_str!("../doc/summary.md");
+pub const HELP_SUMMARY: &str = include_str!("../doc/summary.md");
