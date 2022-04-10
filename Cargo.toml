@@ -3,7 +3,7 @@ name = "rust-expression"
 version = "0.3.0"
 authors = ["Martin Suesskraut <martin.suesskraut@gmail.com>"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
 
 description = "Calculator and solver for linear equations."
 repository = "https://github.com/msuesskraut/calc"
