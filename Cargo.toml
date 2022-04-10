@@ -1,6 +1,6 @@
 [package]
 name = "rust-expression"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Martin Suesskraut <martin.suesskraut@gmail.com>"]
 license = "MIT"
 edition = "2021"
